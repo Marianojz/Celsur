@@ -1,0 +1,23 @@
+# Archivos Excel temporales
+*.xls
+*.xlsx
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Archivos de editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Archivos de backup
+*.bak
+*.backup
+

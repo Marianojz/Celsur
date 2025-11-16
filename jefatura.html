@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jefatura - Consolidado de Presentismo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+            --info-color: #3498db;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            overflow: hidden;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .current-date {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 1.1em;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: var(--light-color);
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .filter-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        select, button {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+        }
+        
+        button {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, var(--success-color), #2ecc71);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid var(--secondary-color);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card.total {
+            border-left-color: var(--primary-color);
+            background: linear-gradient(135deg, #f8f9fa, white);
+        }
+
+        .stat-card.presente {
+            border-left-color: var(--success-color);
+        }
+
+        .stat-card.ausente {
+            border-left-color: var(--danger-color);
+        }
+
+        .stat-card.intermedio {
+            border-left-color: var(--warning-color);
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-sublabel {
+            font-size: 0.85em;
+            color: #999;
+        }
+
+        .sections-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .section-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--light-color);
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .section-icon {
+            font-size: 2em;
+            color: var(--secondary-color);
+        }
+
+        .turn-section {
+            margin-bottom: 25px;
+        }
+
+        .turn-header {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .turn-header.intermedio {
+            background: linear-gradient(135deg, var(--warning-color), #e67e22);
+        }
+
+        .turn-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .turn-stat {
+            text-align: center;
+            padding: 10px;
+            background: var(--light-color);
+            border-radius: 8px;
+        }
+
+        .turn-stat-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .turn-stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .employees-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .employee-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: var(--light-color);
+            border-radius: 6px;
+            transition: background 0.3s ease;
+        }
+
+        .employee-item:hover {
+            background: #d6dbdf;
+        }
+
+        .employee-info {
+            flex: 1;
+        }
+
+        .employee-name {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 3px;
+        }
+
+        .employee-details {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .employee-status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status-presente {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .status-ausente {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .status-otro {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state i {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        /* Menú de navegación */
+        .nav-menu {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .nav-toggle {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .nav-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .nav-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 10px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            min-width: 250px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .nav-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .nav-item:last-child {
+            border-bottom: none;
+        }
+
+        .nav-item:hover {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .nav-item i {
+            font-size: 1.2em;
+            width: 25px;
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .sections-container {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .turn-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Menú de navegación -->
+    <div class="nav-menu">
+        <div class="nav-toggle" onclick="toggleNav()">
+            <i class="fas fa-bars"></i>
+            <span>Menú</span>
+        </div>
+        <div class="nav-dropdown" id="navDropdown">
+            <a href="index.html" class="nav-item">
+                <i class="fas fa-home"></i>
+                <span>Inicio</span>
+            </a>
+            <a href="jefatura.html" class="nav-item active">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Jefatura</span>
+            </a>
+            <a href="presentismo.html" class="nav-item">
+                <i class="fas fa-user-check"></i>
+                <span>Presentismo Ventilación</span>
+            </a>
+            <a href="presentismo-recepcion.html" class="nav-item">
+                <i class="fas fa-user-check"></i>
+                <span>Presentismo Recepción</span>
+            </a>
+            <a href="presentismo-despacho.html" class="nav-item">
+                <i class="fas fa-user-check"></i>
+                <span>Presentismo Despacho</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div class="current-date" id="current-date"></div>
+            <h1><i class="fas fa-tachometer-alt"></i> Jefatura</h1>
+            <p>Consolidado de Presentismo - Todos los Sectores</p>
+        </header>
+
+        <div class="controls">
+            <div class="filter-controls">
+                <select id="month-select">
+                    <option value="0">Enero</option>
+                    <option value="1">Febrero</option>
+                    <option value="2">Marzo</option>
+                    <option value="3">Abril</option>
+                    <option value="4">Mayo</option>
+                    <option value="5">Junio</option>
+                    <option value="6">Julio</option>
+                    <option value="7">Agosto</option>
+                    <option value="8">Septiembre</option>
+                    <option value="9">Octubre</option>
+                    <option value="10">Noviembre</option>
+                    <option value="11">Diciembre</option>
+                </select>
+                <select id="year-select">
+                    <!-- Options will be populated by JavaScript -->
+                </select>
+                <select id="sector-filter">
+                    <option value="all">Todos los Sectores</option>
+                    <option value="ventilacion">Ventilación</option>
+                    <option value="recepcion">Recepción</option>
+                    <option value="despacho">Despacho</option>
+                </select>
+            </div>
+            <button class="btn-export" onclick="exportarExcel()">
+                <i class="fas fa-file-excel"></i> Exportar a Excel
+            </button>
+        </div>
+
+        <div class="stats-grid" id="stats-grid">
+            <!-- Stats will be populated by JavaScript -->
+        </div>
+
+        <div class="sections-container" id="sections-container">
+            <!-- Sections will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURACIÓN
+        // ============================================
+        const CONFIG = {
+            MESES: [
+                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+            ],
+            TURNOS: {
+                MAÑANA: { inicio: 1, fin: 4, horario: '06:00 - 14:00' },
+                TARDE: { inicio: 5, fin: 8, horario: '14:00 - 22:00' },
+                INTERMEDIO: { inicio: 9, fin: 99, horario: 'Intermedio' }
+            },
+            SECTORES: {
+                VENTILACION: 'ventilacion',
+                RECEPCION: 'recepcion',
+                DESPACHO: 'despacho'
+            },
+            STORAGE_KEYS: {
+                VENTILACION: 'attendanceData',
+                RECEPCION: 'attendanceDataRecepcion',
+                DESPACHO: 'attendanceDataDespacho'
+            }
+        };
+
+        // ============================================
+        // VARIABLES GLOBALES
+        // ============================================
+        let allEmployees = [];
+        let currentDate = new Date();
+        let currentMonth = currentDate.getMonth();
+        let currentYear = currentDate.getFullYear();
+
+        // ============================================
+        // INICIALIZACIÓN
+        // ============================================
+        function inicializar() {
+            document.getElementById('current-date').textContent = formatDate(currentDate);
+            
+            // Configurar selector de año
+            const yearSelect = document.getElementById('year-select');
+            for (let i = currentYear - 5; i <= currentYear + 1; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                yearSelect.appendChild(option);
+            }
+            yearSelect.value = currentYear;
+            document.getElementById('month-select').value = currentMonth;
+
+            // Event listeners
+            document.getElementById('month-select').addEventListener('change', function() {
+                currentMonth = parseInt(this.value);
+                cargarDatos();
+            });
+
+            document.getElementById('year-select').addEventListener('change', function() {
+                currentYear = parseInt(this.value);
+                cargarDatos();
+            });
+
+            document.getElementById('sector-filter').addEventListener('change', function() {
+                cargarDatos();
+            });
+
+            cargarDatos();
+        }
+
+        // ============================================
+        // CARGA DE DATOS
+        // ============================================
+        function cargarDatos() {
+            allEmployees = [];
+            
+            // Cargar datos de cada sector
+            const sectores = [
+                { key: CONFIG.STORAGE_KEYS.VENTILACION, nombre: 'Ventilación', sector: CONFIG.SECTORES.VENTILACION },
+                { key: CONFIG.STORAGE_KEYS.RECEPCION, nombre: 'Recepción', sector: CONFIG.SECTORES.RECEPCION },
+                { key: CONFIG.STORAGE_KEYS.DESPACHO, nombre: 'Despacho', sector: CONFIG.SECTORES.DESPACHO }
+            ];
+
+            sectores.forEach(sectorData => {
+                const data = localStorage.getItem(sectorData.key);
+                if (data) {
+                    try {
+                        const employees = JSON.parse(data);
+                        employees.forEach(emp => {
+                            allEmployees.push({
+                                ...emp,
+                                sector: sectorData.sector,
+                                sectorNombre: sectorData.nombre
+                            });
+                        });
+                    } catch (e) {
+                        console.error(`Error cargando datos de ${sectorData.nombre}:`, e);
+                    }
+                }
+            });
+
+            // Si no hay datos en localStorage, intentar cargar datos de ejemplo del módulo de ventilación
+            if (allEmployees.length === 0) {
+                // Los datos de ejemplo están en presentismo.html, pero no los podemos acceder directamente
+                // Por ahora, mostramos un mensaje indicando que no hay datos
+            }
+
+            mostrarEstadisticas();
+            mostrarSecciones();
+        }
+
+        // ============================================
+        // FUNCIONES DE UTILIDAD
+        // ============================================
+        function getTurnoHorario(turn) {
+            if (turn >= CONFIG.TURNOS.MAÑANA.inicio && turn <= CONFIG.TURNOS.MAÑANA.fin) {
+                return CONFIG.TURNOS.MAÑANA.horario;
+            } else if (turn >= CONFIG.TURNOS.TARDE.inicio && turn <= CONFIG.TURNOS.TARDE.fin) {
+                return CONFIG.TURNOS.TARDE.horario;
+            } else {
+                return CONFIG.TURNOS.INTERMEDIO.horario;
+            }
+        }
+
+        function getTurnoType(turn) {
+            if (turn >= CONFIG.TURNOS.MAÑANA.inicio && turn <= CONFIG.TURNOS.MAÑANA.fin) {
+                return 'mañana';
+            } else if (turn >= CONFIG.TURNOS.TARDE.inicio && turn <= CONFIG.TURNOS.TARDE.fin) {
+                return 'tarde';
+            } else {
+                return 'intermedio';
+            }
+        }
+
+        function formatDate(date) {
+            return date.toLocaleDateString('es-ES', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+        }
+
+        function getStatusToday(employee) {
+            const today = new Date();
+            const dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            return employee.attendance[dateKey] || '';
+        }
+
+        // ============================================
+        // MOSTRAR ESTADÍSTICAS
+        // ============================================
+        function mostrarEstadisticas() {
+            const sectorFilter = document.getElementById('sector-filter').value;
+            let employees = allEmployees;
+
+            if (sectorFilter !== 'all') {
+                employees = employees.filter(emp => emp.sector === sectorFilter);
+            }
+
+            const today = new Date();
+            const dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+            // Calcular estadísticas
+            const total = employees.length;
+            const presentes = employees.filter(emp => getStatusToday(emp) === 'P').length;
+            const ausentes = employees.filter(emp => getStatusToday(emp) === 'A').length;
+            
+            // Por turnos
+            const mañana = employees.filter(emp => {
+                const turnType = getTurnoType(emp.turn);
+                return turnType === 'mañana';
+            });
+            const tarde = employees.filter(emp => {
+                const turnType = getTurnoType(emp.turn);
+                return turnType === 'tarde';
+            });
+            const intermedio = employees.filter(emp => {
+                const turnType = getTurnoType(emp.turn);
+                return turnType === 'intermedio';
+            });
+
+            const presentesMañana = mañana.filter(emp => getStatusToday(emp) === 'P').length;
+            const presentesTarde = tarde.filter(emp => getStatusToday(emp) === 'P').length;
+            const presentesIntermedio = intermedio.filter(emp => getStatusToday(emp) === 'P').length;
+
+            // Por sectores
+            const ventilacion = employees.filter(emp => emp.sector === CONFIG.SECTORES.VENTILACION).length;
+            const recepcion = employees.filter(emp => emp.sector === CONFIG.SECTORES.RECEPCION).length;
+            const despacho = employees.filter(emp => emp.sector === CONFIG.SECTORES.DESPACHO).length;
+
+            const html = `
+                <div class="stat-card total">
+                    <div class="stat-label">Total Empleados</div>
+                    <div class="stat-value">${total}</div>
+                    <div class="stat-sublabel">Todos los sectores</div>
+                </div>
+                <div class="stat-card presente">
+                    <div class="stat-label">Presentes Hoy</div>
+                    <div class="stat-value">${presentes}</div>
+                    <div class="stat-sublabel">${total > 0 ? ((presentes / total) * 100).toFixed(1) : 0}% del total</div>
+                </div>
+                <div class="stat-card ausente">
+                    <div class="stat-label">Ausentes Hoy</div>
+                    <div class="stat-value">${ausentes}</div>
+                    <div class="stat-sublabel">${total > 0 ? ((ausentes / total) * 100).toFixed(1) : 0}% del total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Turno Mañana (06:00-14:00)</div>
+                    <div class="stat-value">${mañana.length}</div>
+                    <div class="stat-sublabel">${presentesMañana} presentes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Turno Tarde (14:00-22:00)</div>
+                    <div class="stat-value">${tarde.length}</div>
+                    <div class="stat-sublabel">${presentesTarde} presentes</div>
+                </div>
+                <div class="stat-card intermedio">
+                    <div class="stat-label">Turno Intermedio</div>
+                    <div class="stat-value">${intermedio.length}</div>
+                    <div class="stat-sublabel">${presentesIntermedio} presentes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Ventilación</div>
+                    <div class="stat-value">${ventilacion}</div>
+                    <div class="stat-sublabel">Empleados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Recepción</div>
+                    <div class="stat-value">${recepcion}</div>
+                    <div class="stat-sublabel">Empleados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Despacho</div>
+                    <div class="stat-value">${despacho}</div>
+                    <div class="stat-sublabel">Empleados</div>
+                </div>
+            `;
+
+            document.getElementById('stats-grid').innerHTML = html;
+        }
+
+        // ============================================
+        // MOSTRAR SECCIONES
+        // ============================================
+        function mostrarSecciones() {
+            const sectorFilter = document.getElementById('sector-filter').value;
+            let employees = allEmployees;
+
+            if (sectorFilter !== 'all') {
+                employees = employees.filter(emp => emp.sector === sectorFilter);
+            }
+
+            const sectores = [
+                { key: CONFIG.SECTORES.VENTILACION, nombre: 'Ventilación', icon: 'fa-wind' },
+                { key: CONFIG.SECTORES.RECEPCION, nombre: 'Recepción', icon: 'fa-inbox' },
+                { key: CONFIG.SECTORES.DESPACHO, nombre: 'Despacho', icon: 'fa-shipping-fast' }
+            ];
+
+            let html = '';
+
+            sectores.forEach(sector => {
+                const sectorEmployees = employees.filter(emp => emp.sector === sector.key);
+                
+                if (sectorFilter === 'all' || sectorFilter === sector.key) {
+                    html += `
+                        <div class="section-card">
+                            <div class="section-header">
+                                <div class="section-title">
+                                    <i class="fas ${sector.icon}"></i> ${sector.nombre}
+                                </div>
+                                <div class="section-icon">
+                                    <i class="fas ${sector.icon}"></i>
+                                </div>
+                            </div>
+                            ${mostrarTurnosPorSector(sectorEmployees, sector.nombre)}
+                        </div>
+                    `;
+                }
+            });
+
+            if (html === '') {
+                html = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h3>No hay datos disponibles</h3>
+                        <p>Los datos de presentismo se cargarán desde los módulos individuales</p>
+                    </div>
+                `;
+            }
+
+            document.getElementById('sections-container').innerHTML = html;
+        }
+
+        function mostrarTurnosPorSector(employees, sectorNombre) {
+            const turnos = [
+                { type: 'mañana', label: 'Turno Mañana', horario: '06:00 - 14:00', inicio: 1, fin: 4 },
+                { type: 'tarde', label: 'Turno Tarde', horario: '14:00 - 22:00', inicio: 5, fin: 8 },
+                { type: 'intermedio', label: 'Turno Intermedio', horario: 'Intermedio', inicio: 9, fin: 99 }
+            ];
+
+            let html = '';
+
+            turnos.forEach(turno => {
+                const turnEmployees = employees.filter(emp => 
+                    emp.turn >= turno.inicio && emp.turn <= turno.fin
+                );
+
+                if (turnEmployees.length > 0) {
+                    const today = new Date();
+                    const dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                    
+                    const presentes = turnEmployees.filter(emp => getStatusToday(emp) === 'P').length;
+                    const ausentes = turnEmployees.filter(emp => getStatusToday(emp) === 'A').length;
+                    const otros = turnEmployees.length - presentes - ausentes;
+
+                    html += `
+                        <div class="turn-section">
+                            <div class="turn-header ${turno.type === 'intermedio' ? 'intermedio' : ''}">
+                                <span>${turno.label} (${turno.horario})</span>
+                                <span>${turnEmployees.length} empleados</span>
+                            </div>
+                            <div class="turn-stats">
+                                <div class="turn-stat">
+                                    <div class="turn-stat-label">Presentes</div>
+                                    <div class="turn-stat-value" style="color: var(--success-color);">${presentes}</div>
+                                </div>
+                                <div class="turn-stat">
+                                    <div class="turn-stat-label">Ausentes</div>
+                                    <div class="turn-stat-value" style="color: var(--danger-color);">${ausentes}</div>
+                                </div>
+                                <div class="turn-stat">
+                                    <div class="turn-stat-label">Otros</div>
+                                    <div class="turn-stat-value" style="color: var(--warning-color);">${otros}</div>
+                                </div>
+                            </div>
+                            <div class="employees-list">
+                                ${turnEmployees.map(emp => {
+                                    const status = getStatusToday(emp);
+                                    const statusClass = status === 'P' ? 'presente' : status === 'A' ? 'ausente' : 'otro';
+                                    const statusText = status === 'P' ? 'Presente' : status === 'A' ? 'Ausente' : status || 'Sin registro';
+                                    
+                                    return `
+                                        <div class="employee-item">
+                                            <div class="employee-info">
+                                                <div class="employee-name">${emp.name}</div>
+                                                <div class="employee-details">Turno ${emp.turn} | ${emp.function} | ${emp.contract}</div>
+                                            </div>
+                                            <div class="employee-status status-${statusClass}">${statusText}</div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            if (html === '') {
+                html = `
+                    <div class="empty-state">
+                        <i class="fas fa-users"></i>
+                        <p>No hay empleados registrados en este sector</p>
+                    </div>
+                `;
+            }
+
+            return html;
+        }
+
+        // ============================================
+        // EXPORTAR A EXCEL
+        // ============================================
+        function exportarExcel() {
+            const sectorFilter = document.getElementById('sector-filter').value;
+            let employees = allEmployees;
+
+            if (sectorFilter !== 'all') {
+                employees = employees.filter(emp => emp.sector === sectorFilter);
+            }
+
+            const today = new Date();
+            const dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+            const datos = [
+                ['Sector', 'Turno', 'Horario', 'Nombre', 'Función', 'Contrato', 'Estado Hoy', 'Ausencias', 'Tardanzas']
+            ];
+
+            employees.forEach(emp => {
+                const status = getStatusToday(emp);
+                const statusText = status === 'P' ? 'Presente' : status === 'A' ? 'Ausente' : status || 'Sin registro';
+                const horario = getTurnoHorario(emp.turn);
+                
+                datos.push([
+                    emp.sectorNombre || emp.sector,
+                    emp.turn,
+                    horario,
+                    emp.name,
+                    emp.function,
+                    emp.contract,
+                    statusText,
+                    emp.absences || 0,
+                    emp.late || 0
+                ]);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(datos);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Consolidado");
+            
+            const nombreArchivo = `Jefatura_Consolidado_${CONFIG.MESES[currentMonth]}_${currentYear}.xlsx`;
+            XLSX.writeFile(wb, nombreArchivo);
+        }
+
+        // ============================================
+        // NAVEGACIÓN
+        // ============================================
+        function toggleNav() {
+            const dropdown = document.getElementById('navDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        document.addEventListener('click', function(e) {
+            const navMenu = document.querySelector('.nav-menu');
+            const dropdown = document.getElementById('navDropdown');
+            if (!navMenu.contains(e.target) && dropdown.classList.contains('active')) {
+                dropdown.classList.remove('active');
+            }
+        });
+
+        // Inicializar cuando el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', inicializar);
+        } else {
+            inicializar();
+        }
+    </script>
+</body>
+</html>
+

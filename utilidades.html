@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utilidades - Módulo Ventilación</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --gray: #95a5a6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            overflow: hidden;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .upload-area {
+            border: 3px dashed var(--light);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--light);
+        }
+
+        .upload-area:hover {
+            border-color: var(--secondary);
+            background: #f8f9fa;
+            transform: translateY(-2px);
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            color: var(--gray);
+            margin-bottom: 15px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 8px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-download {
+            background: linear-gradient(135deg, var(--success), #2ecc71);
+        }
+
+        .btn-print {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        }
+
+        .btn-clear {
+            background: linear-gradient(135deg, var(--accent), #c0392b);
+        }
+
+        .file-info {
+            margin: 15px;
+            padding: 12px;
+            background: var(--success);
+            color: white;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--secondary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            color: var(--accent);
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 12px;
+            border-radius: 10px;
+            margin: 15px;
+            text-align: center;
+        }
+
+        .results-section {
+            display: none;
+            padding: 20px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 13px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tr:hover {
+            background-color: #e3f2fd;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 15px;
+            background: var(--light);
+        }
+
+        /* Menú de navegación */
+        .nav-menu {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .nav-toggle {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .nav-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .nav-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 10px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            min-width: 250px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .nav-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--primary);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .nav-item:last-child {
+            border-bottom: none;
+        }
+
+        .nav-item:hover {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .nav-item i {
+            font-size: 1.2em;
+            width: 25px;
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Clase para elementos solo visibles en impresión */
+        .print-only {
+            display: none;
+        }
+
+        /* Estilos para impresión A4 */
+        @media print {
+            @page {
+                size: A4;
+                margin: 10mm;
+            }
+
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+
+            body {
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                font-size: 12pt !important;
+            }
+
+            .nav-menu,
+            .upload-area,
+            .file-info,
+            .loading,
+            #errorContainer,
+            .error,
+            .actions,
+            .btn,
+            .header {
+                display: none !important;
+            }
+
+            .print-only {
+                display: block !important;
+            }
+
+            .container {
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+            }
+
+            /* Título Planning Makro */
+            .print-only h1 {
+                font-size: 28pt !important;
+                margin: 10pt 0 15pt 0 !important;
+                color: #2c3e50 !important;
+                font-weight: 700 !important;
+                text-align: center !important;
+            }
+
+            /* Encabezado de fecha y camiones más grande */
+            .fecha-camiones-header {
+                font-size: 22pt !important;
+                padding: 12pt 15pt !important;
+                margin: 8pt 0 !important;
+            }
+
+            .fecha-print,
+            .camiones-print {
+                font-size: 22pt !important;
+                font-weight: 700 !important;
+            }
+
+            /* Tabla optimizada para A4 */
+            #resultado table {
+                page-break-inside: auto !important;
+                font-size: 9pt !important;
+                width: 100% !important;
+                margin: 5pt 0 !important;
+                border-collapse: collapse !important;
+            }
+
+            #resultado th, #resultado td {
+                padding: 4pt 5pt !important;
+                font-size: 9pt !important;
+                border: 1px solid #ddd !important;
+            }
+
+            #resultado th {
+                font-size: 8pt !important;
+                padding: 5pt 5pt !important;
+                background: #2c3e50 !important;
+                color: white !important;
+            }
+
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+
+            thead {
+                display: table-header-group;
+            }
+
+            tfoot {
+                display: table-footer-group;
+            }
+
+            /* Panel de verificación más compacto */
+            #resultado > div:nth-of-type(2) {
+                margin: 5pt 0 !important;
+                padding: 6pt !important;
+                font-size: 9pt !important;
+            }
+
+            #resultado > div:nth-of-type(2) h4 {
+                font-size: 11pt !important;
+                margin-bottom: 4pt !important;
+            }
+
+            #resultado > div:nth-of-type(2) div {
+                font-size: 9pt !important;
+                gap: 8pt !important;
+            }
+
+            /* Gráfico optimizado para A4 - completo y visible */
+            .grafico-container {
+                margin: 3pt 0 !important;
+                padding: 3pt !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                overflow: visible !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+                background: white !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+            }
+
+            .grafico-container h3 {
+                font-size: 10pt !important;
+                margin: 2pt 0 3pt 0 !important;
+                padding: 0 !important;
+            }
+
+            /* Contenedor del canvas */
+            .canvas-container {
+                height: 120pt !important;
+                max-height: 120pt !important;
+                padding: 2pt !important;
+                margin: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+                overflow: visible !important;
+                position: relative !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            /* Canvas del gráfico */
+            .canvas-container canvas {
+                max-width: 100% !important;
+                width: 100% !important;
+                height: 120pt !important;
+                max-height: 120pt !important;
+                box-sizing: border-box !important;
+                display: block !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            /* Asegurar que el gráfico no se corte en ninguna parte */
+            .grafico-container * {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .upload-area {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            table {
+                font-size: 11px;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+
+            .nav-menu {
+                top: 10px;
+                right: 10px;
+            }
+
+            .nav-toggle {
+                padding: 10px 15px;
+                font-size: 0.9em;
+            }
+
+            .nav-dropdown {
+                min-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Menú de navegación -->
+    <div class="nav-menu">
+        <div class="nav-toggle" onclick="toggleNav()">
+            <i class="fas fa-bars"></i>
+            <span>Menú</span>
+        </div>
+        <div class="nav-dropdown" id="navDropdown">
+            <a href="index.html" class="nav-item">
+                <i class="fas fa-home"></i>
+                <span>Inicio</span>
+            </a>
+            <a href="ventilacion.html" class="nav-item">
+                <i class="fas fa-wind"></i>
+                <span>Ventilación</span>
+            </a>
+            <a href="utilidades.html" class="nav-item active">
+                <i class="fas fa-file-excel"></i>
+                <span>Utilidades</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-file-excel"></i> Utilidades</h1>
+            <p>Herramientas para procesamiento y filtrado de datos</p>
+        </div>
+        
+        <div class="upload-area" id="uploadArea">
+            <input type="file" id="excelFile" class="file-input" accept=".xls,.xlsx">
+            <div>
+                <div class="upload-icon">
+                    <i class="fas fa-file-excel"></i>
+                </div>
+                <h3>Arrastra tu archivo Excel aquí</h3>
+                <p>Formato: .xls, .xlsx</p>
+                <button class="btn" id="selectFileBtn">
+                    <i class="fas fa-search"></i> Seleccionar Archivo
+                </button>
+            </div>
+        </div>
+        
+        <div class="file-info" id="fileInfo" style="display: none;"></div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Procesando archivo...</p>
+        </div>
+        
+        <div id="errorContainer"></div>
+        
+        <div class="results-section" id="resultsSection">
+            <div id="resultado"></div>
+            
+            <div class="actions">
+                <button class="btn btn-download" onclick="descargarExcel()">
+                    <i class="fas fa-download"></i> Descargar Resultado
+                </button>
+                <button class="btn btn-print" onclick="imprimirPagina()">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+                <button class="btn btn-clear" onclick="limpiarTodo()">
+                    <i class="fas fa-broom"></i> Limpiar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // VARIABLES GLOBALES
+        // ============================================
+        let datosProcesados = null;
+
+        // ============================================
+        // ELEMENTOS DEL DOM
+        // ============================================
+        const DOM = {
+            excelFileInput: document.getElementById('excelFile'),
+            uploadArea: document.getElementById('uploadArea'),
+            resultadoDiv: document.getElementById('resultado'),
+            loadingDiv: document.getElementById('loading'),
+            fileInfoDiv: document.getElementById('fileInfo'),
+            errorContainer: document.getElementById('errorContainer'),
+            resultsSection: document.getElementById('resultsSection')
+        };
+
+        // ============================================
+        // INICIALIZACIÓN
+        // ============================================
+        function inicializarEventos() {
+            DOM.excelFileInput.addEventListener('change', function(e) {
+                if (this.files && this.files.length > 0) {
+                    procesarExcel(this.files[0]);
+                }
+            });
+
+            const selectFileBtn = document.getElementById('selectFileBtn');
+            if (selectFileBtn) {
+                selectFileBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    DOM.excelFileInput.click();
+                });
+            }
+
+            DOM.uploadArea.addEventListener('click', function(e) {
+                if (e.target !== selectFileBtn && !selectFileBtn.contains(e.target)) {
+                    DOM.excelFileInput.click();
+                }
+            });
+
+            DOM.uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                DOM.uploadArea.style.borderColor = 'var(--secondary)';
+            });
+
+            DOM.uploadArea.addEventListener('dragleave', () => {
+                DOM.uploadArea.style.borderColor = 'var(--light)';
+            });
+
+            DOM.uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                DOM.uploadArea.style.borderColor = 'var(--light)';
+                
+                const files = e.dataTransfer.files;
+                if (files && files.length > 0) {
+                    procesarExcel(files[0]);
+                }
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', inicializarEventos);
+        } else {
+            inicializarEventos();
+        }
+
+        // ============================================
+        // FUNCIONES DE PROCESAMIENTO
+        // ============================================
+        function procesarExcel(file) {
+            // Validar archivo
+            const extension = '.' + file.name.split('.').pop().toLowerCase();
+            if (!['.xls', '.xlsx'].includes(extension)) {
+                mostrarError('Formato no válido. Solo se aceptan archivos .xls y .xlsx');
+                return;
+            }
+
+            // Validar nombre del archivo (debe ser formato PORTERIA MAKRO DEL [fecha].xlsx)
+            const fileName = file.name.toUpperCase();
+            if (!fileName.includes('PORTERIA') || !fileName.includes('MAKRO')) {
+                mostrarError('El archivo debe ser del formato: PORTERIA MAKRO DEL [fecha].xlsx');
+                return;
+            }
+
+            // Limpiar resultados anteriores
+            DOM.resultadoDiv.innerHTML = '';
+            DOM.errorContainer.innerHTML = '';
+            
+            // Mostrar información del archivo
+            DOM.fileInfoDiv.style.display = 'block';
+            DOM.fileInfoDiv.innerHTML = `
+                <i class="fas fa-file-excel"></i> 
+                <strong>Archivo:</strong> ${escapeHtml(file.name)} 
+                (${(file.size / 1024 / 1024).toFixed(2)} MB)
+            `;
+            
+            // Mostrar indicador de carga
+            DOM.loadingDiv.style.display = 'block';
+            DOM.resultsSection.style.display = 'none';
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    
+                    if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+                        throw new Error('El archivo Excel no contiene hojas de cálculo');
+                    }
+                    
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    
+                    // Leer datos manteniendo el formato original
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+                        defval: "",
+                        raw: true,
+                        header: 1
+                    });
+                    
+                    if (!jsonData || jsonData.length < 2) {
+                        throw new Error('El archivo no contiene suficientes datos para procesar');
+                    }
+                    
+                    // Extraer fecha del nombre del archivo
+                    const fechaMatch = file.name.match(/(\d{2}-\d{2}-\d{4})/);
+                    const fecha = fechaMatch ? fechaMatch[1] : new Date().toLocaleDateString('es-ES').replace(/\//g, '-');
+                    
+                    // Procesar y filtrar datos
+                    filtrarDatos(jsonData, fecha);
+                    
+                    // Mostrar resultados usando la tabla procesada
+                    if (datosProcesados && datosProcesados.tabla) {
+                        mostrarResultados(datosProcesados.tabla);
+                    } else {
+                        mostrarResultados([]);
+                    }
+                    
+                } catch (error) {
+                    console.error('Error procesando Excel:', error);
+                    mostrarError(`Error al procesar el archivo: ${error.message || 'Error desconocido'}`);
+                } finally {
+                    DOM.loadingDiv.style.display = 'none';
+                }
+            };
+            
+            reader.onerror = function() {
+                DOM.loadingDiv.style.display = 'none';
+                mostrarError('Error al leer el archivo. Por favor, verifique que el archivo no esté corrupto.');
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ============================================
+        // FUNCIÓN DE FILTRADO Y AGRUPACIÓN
+        // ============================================
+        function filtrarDatos(datos, fecha) {
+            if (!datos || datos.length === 0) {
+                return [];
+            }
+
+            // PASO 1: Eliminar la fila 1 (índice 0)
+            const datosSinFila1 = datos.slice(1);
+            if (datosSinFila1.length === 0) {
+                return [];
+            }
+
+            // PASO 2: Buscar índices de columnas: Familia, Paradas, Bultos, Camiones
+            const headers = datosSinFila1[0] || []; // Ahora la primera fila son los encabezados
+            
+            let indiceFamilia = -1;
+            let indiceParadas = -1;
+            let indiceBultos = -1;
+            let indiceCamion = -1; // Para contar camiones únicos
+            
+            headers.forEach((header, index) => {
+                const headerStr = String(header || '').toLowerCase().trim();
+                
+                // Buscar columna "Familia"
+                if (indiceFamilia === -1 && headerStr.includes('familia')) {
+                    indiceFamilia = index;
+                }
+                
+                // Buscar columna "Paradas"
+                if (indiceParadas === -1 && headerStr.includes('parada')) {
+                    indiceParadas = index;
+                }
+                
+                // Buscar columna "Bultos"
+                if (indiceBultos === -1 && (
+                    headerStr.includes('bulto') || 
+                    headerStr === 'bl' ||
+                    headerStr.includes('bl ')
+                )) {
+                    indiceBultos = index;
+                }
+
+                // Buscar columna "Camiones" (buscar en cualquier parte del nombre)
+                if (indiceCamion === -1) {
+                    // Buscar exactamente "camiones" o "camión" (sin acento)
+                    if (headerStr === 'camiones' || headerStr === 'camión' || headerStr === 'camion') {
+                        indiceCamion = index;
+                    }
+                    // Buscar que contenga "camion" o "camión"
+                    else if (headerStr.includes('camion') || headerStr.includes('camión')) {
+                        indiceCamion = index;
+                    }
+                    // Buscar otras variantes
+                    else if (headerStr.includes('vehículo') || headerStr.includes('vehiculo') ||
+                             headerStr.includes('patente') || headerStr.includes('placa') ||
+                             headerStr.includes('unidad') || headerStr.includes('numero') && headerStr.includes('vehiculo')) {
+                        indiceCamion = index;
+                    }
+                }
+            });
+
+            // Si no encontramos las columnas por nombre, usar las primeras 3 columnas
+            if (indiceFamilia === -1) indiceFamilia = 0;
+            if (indiceParadas === -1) indiceParadas = 1;
+            if (indiceBultos === -1) indiceBultos = 2;
+            
+            // Si no encontramos Camiones, buscar en todas las columnas por valores numéricos únicos
+            if (indiceCamion === -1 && datosSinFila1.length > 1) {
+                console.log('⚠️ No se encontró columna "Camiones" por nombre. Buscando por patrón...');
+                // Buscar columna que tenga muchos valores únicos (probablemente camiones)
+                for (let colIdx = 0; colIdx < headers.length; colIdx++) {
+                    if (colIdx === indiceFamilia || colIdx === indiceParadas || colIdx === indiceBultos) continue;
+                    
+                    const valoresUnicos = new Set();
+                    for (let rowIdx = 1; rowIdx < Math.min(datosSinFila1.length, 50); rowIdx++) {
+                        const valor = datosSinFila1[rowIdx][colIdx];
+                        if (valor !== undefined && valor !== null && valor !== '') {
+                            valoresUnicos.add(String(valor).trim());
+                        }
+                    }
+                    // Si tiene muchos valores únicos (más de 10), podría ser la columna de camiones
+                    if (valoresUnicos.size > 10) {
+                        console.log(`Posible columna Camiones encontrada en índice ${colIdx} (${headers[colIdx]}): ${valoresUnicos.size} valores únicos`);
+                        if (indiceCamion === -1) {
+                            indiceCamion = colIdx;
+                        }
+                    }
+                }
+            }
+            
+            // Debug: mostrar qué columnas se encontraron
+            console.log('Encabezados encontrados:', headers);
+            console.log('Columnas detectadas:', {
+                Familia: indiceFamilia + ' (' + (headers[indiceFamilia] || 'N/A') + ')',
+                Paradas: indiceParadas + ' (' + (headers[indiceParadas] || 'N/A') + ')',
+                Bultos: indiceBultos + ' (' + (headers[indiceBultos] || 'N/A') + ')',
+                Camiones: indiceCamion >= 0 ? (indiceCamion + ' (' + (headers[indiceCamion] || 'N/A') + ')') : 'NO ENCONTRADA'
+            });
+
+            // PASO 3: Contar el TOTAL de camiones (filas con valores en la columna Camiones)
+            // El usuario quiere el total de filas, no valores únicos
+            let totalCamiones = 0;
+            const camionesUnicos = new Set(); // Para debug
+            
+            // Contar todas las filas que tienen un valor en la columna Camiones
+            for (let i = 1; i < datosSinFila1.length; i++) {
+                const fila = datosSinFila1[i];
+                if (!fila || fila.length === 0) continue;
+
+                // Verificar si hay un valor en la columna de Camiones
+                if (indiceCamion >= 0 && indiceCamion < fila.length) {
+                    const valorCamion = fila[indiceCamion];
+                    
+                    // Verificar que el valor no esté vacío
+                    if (valorCamion !== undefined && valorCamion !== null && valorCamion !== '') {
+                        // Convertir a string y limpiar completamente
+                        let valorStr = String(valorCamion).trim();
+                        
+                        // Eliminar espacios extra, caracteres especiales al inicio/final
+                        valorStr = valorStr.replace(/^\s+|\s+$/g, '').replace(/^["']|["']$/g, '');
+                        
+                        // Si tiene un valor válido, contar la fila como un camión
+                        if (valorStr && valorStr !== '' && valorStr.toLowerCase() !== 'n/a' && valorStr.toLowerCase() !== 'na') {
+                            totalCamiones++;
+                            
+                            // También guardar el valor único para debug
+                            const numCamion = parseFloat(valorStr);
+                            if (!isNaN(numCamion) && numCamion > 0) {
+                                camionesUnicos.add(numCamion);
+                            } else {
+                                camionesUnicos.add(valorStr);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // PASO 4: Procesar datos y agrupar por Familia (filtrando "en blanco")
+            const grupos = {};
+            let totalParadas = 0;
+            let totalBultos = 0;
+
+            // Procesar filas de datos (empezar desde la fila 1, ya que la 0 son encabezados)
+            for (let i = 1; i < datosSinFila1.length; i++) {
+                const fila = datosSinFila1[i];
+                if (!fila || fila.length === 0) continue;
+
+                // Extraer valores de las columnas
+                const familia = String(fila[indiceFamilia] || '').trim();
+                const paradas = parseFloat(fila[indiceParadas]) || 0;
+                const bultos = parseFloat(fila[indiceBultos]) || 0;
+
+                // Filtrar valores en blanco (desmarcar "en blanco")
+                if (!familia || familia === '' || familia.toLowerCase() === 'en blanco' || 
+                    familia.toLowerCase() === 'blanco' || familia === 'N/A' || familia === 'n/a') {
+                    continue;
+                }
+
+                // Normalizar familia (convertir a mayúsculas y limpiar)
+                const familiaNormalizada = familia.toUpperCase().trim();
+
+                // Agrupar por Familia
+                if (!grupos[familiaNormalizada]) {
+                    grupos[familiaNormalizada] = {
+                        familia: familiaNormalizada,
+                        paradas: 0,
+                        bultos: 0
+                    };
+                }
+
+                grupos[familiaNormalizada].paradas += paradas;
+                grupos[familiaNormalizada].bultos += bultos;
+                totalParadas += paradas;
+                totalBultos += bultos;
+            }
+
+            // totalCamiones ya está calculado arriba (total de filas con valores en Camiones)
+            
+            // Debug: mostrar información de camiones
+            const valoresCamiones = Array.from(camionesUnicos).sort((a, b) => {
+                // Ordenar numéricamente si son números, alfabéticamente si son texto
+                const aNum = typeof a === 'number' ? a : parseFloat(a);
+                const bNum = typeof b === 'number' ? b : parseFloat(b);
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    return aNum - bNum;
+                }
+                return String(a).localeCompare(String(b));
+            });
+            
+            console.log('Camiones encontrados:', {
+                totalFilas: totalCamiones, // Total de filas con valores en Camiones
+                valoresUnicos: camionesUnicos.size, // Valores únicos diferentes
+                valores: valoresCamiones,
+                tipoValores: valoresCamiones.map(v => typeof v)
+            });
+            
+            // Mostrar TODOS los valores de la columna Camiones para debug
+            if (indiceCamion >= 0 && datosSinFila1.length > 1) {
+                const todosLosValores = [];
+                const valoresConFrecuencia = {};
+                
+                for (let i = 1; i < datosSinFila1.length; i++) {
+                    const fila = datosSinFila1[i];
+                    if (fila && fila[indiceCamion] !== undefined && fila[indiceCamion] !== null && fila[indiceCamion] !== '') {
+                        const valor = fila[indiceCamion];
+                        todosLosValores.push(valor);
+                        
+                        const valorStr = String(valor).trim();
+                        valoresConFrecuencia[valorStr] = (valoresConFrecuencia[valorStr] || 0) + 1;
+                    }
+                }
+                
+                console.log('TODOS los valores en columna Camiones:', {
+                    totalFilas: todosLosValores.length,
+                    valoresUnicos: Object.keys(valoresConFrecuencia).length,
+                    frecuenciaValores: valoresConFrecuencia,
+                    primeros20: todosLosValores.slice(0, 20),
+                    ultimos20: todosLosValores.slice(-20)
+                });
+            }
+            
+            // Si no se encontraron camiones pero hay una columna, mostrar advertencia
+            if (totalCamiones === 0 && indiceCamion >= 0) {
+                console.warn('⚠️ No se encontraron camiones únicos. Verificar que la columna "Camiones" tenga valores.');
+            } else if (indiceCamion === -1) {
+                console.warn('⚠️ No se encontró la columna "Camiones". Buscando en todas las columnas...');
+                // Intentar buscar en todas las columnas
+                const todasLasColumnas = headers.map((h, idx) => ({ nombre: h, indice: idx }));
+                console.log('Todas las columnas disponibles:', todasLasColumnas);
+            }
+
+            // PASO 5: Crear estructura de salida (tabla dinámica/pivotada)
+            const resultado = [];
+            
+            // Encabezado con fecha y total de camiones (formato: fecha en primera columna, "X Camiones" en tercera)
+            // Convertir DD-MM-YYYY a DD/MM/YYYY
+            const partesFecha = fecha.split('-');
+            const fechaFormateada = partesFecha.length === 3 ? 
+                `${partesFecha[0]}/${partesFecha[1]}/${partesFecha[2]}` : fecha;
+            resultado.push([fechaFormateada, ``, `${totalCamiones} Camiones`]);
+            resultado.push([]); // Fila vacía
+            
+            // Encabezados de la tabla dinámica
+            resultado.push(['Etiquetas de fila', 'Suma de Paradas', 'Suma de Bultos']);
+            
+            // Ordenar grupos por Familia alfabéticamente
+            const familiasOrdenadas = Object.keys(grupos).sort();
+            
+            // Agregar filas de datos agrupados por Familia
+            familiasOrdenadas.forEach(familia => {
+                const grupo = grupos[familia];
+                resultado.push([
+                    grupo.familia,
+                    grupo.paradas,
+                    grupo.bultos
+                ]);
+            });
+            
+            // Fila de totales generales
+            resultado.push(['Total general', totalParadas, totalBultos]);
+            
+            // Guardar información adicional para el gráfico y verificación
+            datosProcesados = {
+                tabla: resultado,
+                grupos: grupos,
+                totales: {
+                    paradas: totalParadas,
+                    bultos: totalBultos,
+                    camiones: totalCamiones
+                },
+                fecha: fecha,
+                fechaFormateada: fechaFormateada
+            };
+            
+            return resultado;
+        }
+
+        function mostrarResultados(datos) {
+            if (!datos || datos.length === 0) {
+                DOM.resultadoDiv.innerHTML = '<p>No hay datos para mostrar</p>';
+                return;
+            }
+
+            // Extraer información adicional si está disponible
+            const info = datosProcesados && datosProcesados.totales ? datosProcesados : null;
+            const fechaFormateada = info ? info.fechaFormateada : '';
+            const totalCamiones = info ? info.totales.camiones : 0;
+            const totalParadas = info ? info.totales.paradas : 0;
+            const totalBultos = info ? info.totales.bultos : 0;
+
+            let html = '';
+            
+            // Título Planning Makro (solo visible en impresión)
+            html += `
+                <div class="print-only" style="text-align: center; margin-bottom: 15px;">
+                    <h1 style="font-size: 2.5em; margin: 0; color: var(--primary); font-weight: 700;">Planning Makro</h1>
+                </div>
+            `;
+            
+            // Encabezado con fecha y total de camiones (más grande)
+            html += `
+                <div class="fecha-camiones-header" style="display: flex; justify-content: space-between; align-items: center; margin: 20px; padding: 20px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border-radius: 10px;">
+                    <div class="fecha-print" style="font-size: 2em; font-weight: 700;">${fechaFormateada || 'Fecha'}</div>
+                    <div class="camiones-print" style="font-size: 2em; font-weight: 700;">${totalCamiones} Camiones</div>
+                </div>
+            `;
+
+            // Tabla dinámica (pivotada)
+            html += '<div style="overflow-x: auto; margin: 15px;">';
+            html += '<table><thead><tr>';
+
+            // Buscar la fila de encabezados (normalmente después de la fila de fecha)
+            let inicioTabla = 0;
+            for (let i = 0; i < datos.length; i++) {
+                if (datos[i] && datos[i].length > 0 && 
+                    String(datos[i][0] || '').toLowerCase().includes('etiqueta')) {
+                    inicioTabla = i;
+                    break;
+                }
+            }
+
+            // Encabezados
+            if (datos[inicioTabla]) {
+                datos[inicioTabla].forEach(header => {
+                    html += `<th>${escapeHtml(header || '')}</th>`;
+                });
+            }
+
+            html += '</tr></thead><tbody>';
+
+            // Calcular valores máximos para semaforización (antes de procesar filas)
+            let maxParadas = 0;
+            let maxBultos = 0;
+            const filasDatos = [];
+            
+            // Primero, recopilar todas las filas de datos y calcular máximos
+            for (let i = inicioTabla + 1; i < datos.length; i++) {
+                const fila = datos[i];
+                if (!fila || fila.length === 0) continue;
+                
+                const esTotal = String(fila[0] || '').toLowerCase().includes('total');
+                if (!esTotal) {
+                    // Asumir que paradas está en índice 1 y bultos en índice 2
+                    const paradas = parseFloat(fila[1]) || 0;
+                    const bultos = parseFloat(fila[2]) || 0;
+                    
+                    if (paradas > maxParadas) maxParadas = paradas;
+                    if (bultos > maxBultos) maxBultos = bultos;
+                    
+                    filasDatos.push({ fila, paradas, bultos, esTotal: false });
+                } else {
+                    filasDatos.push({ fila, paradas: 0, bultos: 0, esTotal: true });
+                }
+            }
+
+            // Función para calcular el color según los valores (semaforización con colores pastel)
+            function calcularColorSemaforo(paradas, bultos, maxParadas, maxBultos) {
+                // Normalizar valores (0 a 1)
+                const ratioParadas = maxParadas > 0 ? paradas / maxParadas : 0;
+                const ratioBultos = maxBultos > 0 ? bultos / maxBultos : 0;
+                
+                // Usar el máximo de ambos ratios para determinar el color
+                const ratioMax = Math.max(ratioParadas, ratioBultos);
+                
+                // Semaforización con colores pastel:
+                // Verde pastel (bajo): 0-0.4
+                // Amarillo pastel (medio): 0.4-0.7
+                // Naranja pastel (alto): 0.7-1.0
+                
+                if (ratioMax >= 0.7) {
+                    // Naranja pastel para valores altos
+                    return 'background: linear-gradient(135deg, #ffd4b3, #ffb88c); color: #2c3e50; font-weight: 600;';
+                } else if (ratioMax >= 0.4) {
+                    // Amarillo pastel para valores medios
+                    return 'background: linear-gradient(135deg, #fff4b3, #ffe08c); color: #2c3e50; font-weight: 600;';
+                } else {
+                    // Verde pastel para valores bajos
+                    return 'background: linear-gradient(135deg, #c8e6c9, #a5d6a7); color: #2c3e50; font-weight: 500;';
+                }
+            }
+
+            // Procesar y mostrar las filas con semaforización
+            filasDatos.forEach(({ fila, paradas, bultos, esTotal }) => {
+                let rowStyle = '';
+                
+                if (esTotal) {
+                    // Fila de totales: estilo agrandado y destacado
+                    rowStyle = 'background: linear-gradient(135deg, var(--dark), #34495e); color: white; font-weight: bold; font-size: 1.3em; padding: 15px;';
+                } else {
+                    // Aplicar semaforización según valores
+                    rowStyle = calcularColorSemaforo(paradas, bultos, maxParadas, maxBultos);
+                }
+
+                html += `<tr style="${rowStyle}">`;
+                fila.forEach((cell, cellIndex) => {
+                    // Formatear números
+                    const cellValue = cell || '';
+                    const formattedValue = typeof cellValue === 'number' ? 
+                        cellValue.toLocaleString('es-ES') : 
+                        escapeHtml(cellValue);
+                    
+                    // Si es la fila de totales, aplicar estilo adicional a las celdas
+                    const cellStyle = esTotal ? 'font-size: 1.3em; font-weight: bold; padding: 15px;' : '';
+                    html += `<td style="${cellStyle}">${formattedValue}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+
+            // Información de verificación de totales
+            html += `
+                <div style="margin: 15px; padding: 15px; background: var(--light); border-radius: 10px; border-left: 5px solid var(--secondary);">
+                    <h4 style="color: var(--primary); margin-bottom: 10px;">
+                        <i class="fas fa-check-circle"></i> Verificación de Totales
+                    </h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div>
+                            <strong>Total Paradas:</strong> <span style="color: var(--primary); font-size: 1.2em;">${totalParadas.toLocaleString('es-ES')}</span>
+                        </div>
+                        <div>
+                            <strong>Total Bultos:</strong> <span style="color: var(--primary); font-size: 1.2em;">${totalBultos.toLocaleString('es-ES')}</span>
+                        </div>
+                        <div>
+                            <strong>Total Camiones:</strong> <span style="color: var(--primary); font-size: 1.2em;">${totalCamiones}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Gráfico (si hay datos agrupados)
+            if (info && info.grupos) {
+                html += generarGrafico(info.grupos, info.totales);
+            }
+            
+            DOM.resultadoDiv.innerHTML = html;
+            DOM.resultsSection.style.display = 'block';
+        }
+
+        function generarGrafico(grupos, totales) {
+            const familias = Object.keys(grupos).sort();
+            const paradas = familias.map(f => grupos[f].paradas);
+            const bultos = familias.map(f => grupos[f].bultos);
+
+            console.log('Gráfico - Datos:', { familias, paradas, bultos });
+
+            // Crear un ID único para el canvas
+            const chartId = 'graficoComparativo_' + Date.now();
+            
+            let html = `
+                <div class="grafico-container" style="margin: 30px 15px; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                    <h3 style="color: var(--primary); margin-bottom: 20px; text-align: center;">
+                        <i class="fas fa-chart-bar"></i> Gráfico Comparativo - Suma de Paradas y Bultos
+                    </h3>
+                    <div class="canvas-container" style="position: relative; height: 400px; padding: 20px;">
+                        <canvas id="${chartId}"></canvas>
+                    </div>
+                </div>
+            `;
+
+            // Crear el gráfico después de que se inserte el HTML
+            setTimeout(() => {
+                const ctx = document.getElementById(chartId);
+                if (ctx && typeof Chart !== 'undefined') {
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: familias,
+                            datasets: [
+                                {
+                                    label: 'Suma de Paradas',
+                                    data: paradas,
+                                    backgroundColor: 'rgba(52, 152, 219, 0.8)',
+                                    borderColor: 'rgba(52, 152, 219, 1)',
+                                    borderWidth: 2
+                                },
+                                {
+                                    label: 'Suma de Bultos',
+                                    data: bultos,
+                                    backgroundColor: 'rgba(243, 156, 18, 0.8)',
+                                    borderColor: 'rgba(243, 156, 18, 1)',
+                                    borderWidth: 2
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            layout: {
+                                padding: {
+                                    top: 5,
+                                    bottom: 5,
+                                    left: 5,
+                                    right: 5
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top',
+                                    labels: {
+                                        font: {
+                                            size: 10,
+                                            weight: 'bold'
+                                        },
+                                        padding: 8,
+                                        usePointStyle: true,
+                                        boxWidth: 12
+                                    }
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false,
+                                    callbacks: {
+                                        label: function(context) {
+                                            return context.dataset.label + ': ' + context.parsed.y.toLocaleString('es-ES');
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    stacked: false,
+                                    ticks: {
+                                        font: {
+                                            size: 9
+                                        },
+                                        maxRotation: 45,
+                                        minRotation: 45
+                                    },
+                                    grid: {
+                                        display: false
+                                    }
+                                },
+                                y: {
+                                    stacked: false,
+                                    beginAtZero: true,
+                                    ticks: {
+                                        font: {
+                                            size: 9
+                                        },
+                                        callback: function(value) {
+                                            return value.toLocaleString('es-ES');
+                                        }
+                                    },
+                                    grid: {
+                                        color: 'rgba(0, 0, 0, 0.1)'
+                                    }
+                                }
+                            },
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            }
+                        }
+                    });
+                }
+            }, 100);
+
+            return html;
+        }
+
+        function descargarExcel() {
+            if (!datosProcesados) {
+                alert('No hay datos para descargar');
+                return;
+            }
+
+            // Extraer fecha del nombre del archivo original o usar fecha actual
+            const fileInput = DOM.excelFileInput;
+            let fecha = '';
+            
+            if (fileInput.files && fileInput.files.length > 0) {
+                const fileName = fileInput.files[0].name;
+                const fechaMatch = fileName.match(/(\d{2}-\d{2}-\d{4})/);
+                fecha = fechaMatch ? fechaMatch[1] : '';
+            }
+            
+            if (!fecha) {
+                const hoy = new Date();
+                const dia = String(hoy.getDate()).padStart(2, '0');
+                const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+                const anio = hoy.getFullYear();
+                fecha = `${dia}-${mes}-${anio}`;
+            }
+
+            // Generar nombre del archivo de salida: planning [fecha].xlsx
+            const nombreArchivo = `planning ${fecha}.xlsx`;
+
+            // Usar los datos de la tabla procesada
+            let datosParaExcel = [];
+            
+            if (datosProcesados.tabla) {
+                // Si tenemos la estructura procesada, usarla
+                datosParaExcel = datosProcesados.tabla;
+            } else {
+                // Si no, usar los datos directamente
+                datosParaExcel = datosProcesados;
+            }
+
+            // Crear hoja de cálculo con los datos filtrados
+            const ws = XLSX.utils.aoa_to_sheet(datosParaExcel);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Planning");
+            
+            // Descargar archivo
+            XLSX.writeFile(wb, nombreArchivo);
+        }
+
+        function imprimirPagina() {
+            window.print();
+        }
+
+        function limpiarTodo() {
+            datosProcesados = null;
+            DOM.resultadoDiv.innerHTML = '';
+            DOM.errorContainer.innerHTML = '';
+            DOM.fileInfoDiv.style.display = 'none';
+            DOM.excelFileInput.value = '';
+            DOM.resultsSection.style.display = 'none';
+        }
+
+        function mostrarError(mensaje) {
+            if (!mensaje) return;
+            
+            DOM.errorContainer.innerHTML = `
+                <div class="error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Error:</strong> ${escapeHtml(mensaje)}
+                </div>
+            `;
+            DOM.loadingDiv.style.display = 'none';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function toggleNav() {
+            const dropdown = document.getElementById('navDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        document.addEventListener('click', function(e) {
+            const navMenu = document.querySelector('.nav-menu');
+            const dropdown = document.getElementById('navDropdown');
+            if (!navMenu.contains(e.target) && dropdown.classList.contains('active')) {
+                dropdown.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -425,12 +425,12 @@
         </div>
 
         <div class="modules-container">
-            <!-- Submódulo 1: Producción -->
-            <div class="module-card" data-module="produccion">
+            <!-- Submódulo 1: Rendimiento -->
+            <div class="module-card" data-module="rendimiento">
                 <div class="module-icon">
                     <i class="fas fa-chart-line"></i>
                 </div>
-                <div class="module-title">Producción</div>
+                <div class="module-title">Rendimiento</div>
                 <div class="module-description">
                     Análisis de rendimiento y productividad operacional. 
                     Control de tiempo muerto, eficiencia y proyecciones de productividad.
@@ -441,8 +441,8 @@
                     <li><i class="fas fa-check-circle"></i> Proyecciones de productividad</li>
                     <li><i class="fas fa-check-circle"></i> Reportes y gráficos</li>
                 </ul>
-                <button class="module-button" onclick="abrirSubmodulo('produccion')">
-                    <i class="fas fa-arrow-right"></i> Acceder a Producción
+                <button class="module-button" onclick="abrirSubmodulo('rendimiento')">
+                    <i class="fas fa-arrow-right"></i> Acceder a Rendimiento
                 </button>
             </div>
 
@@ -464,6 +464,27 @@
                 </ul>
                 <button class="module-button" onclick="abrirSubmodulo('presentismo')">
                     <i class="fas fa-arrow-right"></i> Acceder a Presentismo
+                </button>
+            </div>
+
+            <!-- Submódulo 3: Utilidades -->
+            <div class="module-card" data-module="utilidades">
+                <div class="module-icon">
+                    <i class="fas fa-file-excel"></i>
+                </div>
+                <div class="module-title">Utilidades</div>
+                <div class="module-description">
+                    Herramientas útiles para el procesamiento y filtrado de datos. 
+                    Filtrado de archivos Excel y otras utilidades.
+                </div>
+                <ul class="module-features">
+                    <li><i class="fas fa-check-circle"></i> Filtrado de archivos Excel</li>
+                    <li><i class="fas fa-check-circle"></i> Procesamiento de datos</li>
+                    <li><i class="fas fa-check-circle"></i> Exportación filtrada</li>
+                    <li><i class="fas fa-check-circle"></i> Visualización de resultados</li>
+                </ul>
+                <button class="module-button" onclick="abrirSubmodulo('utilidades')">
+                    <i class="fas fa-arrow-right"></i> Acceder a Utilidades
                 </button>
             </div>
         </div>
@@ -488,9 +509,9 @@
                 <i class="fas fa-wind"></i>
                 <span>Ventilación</span>
             </a>
-            <a href="produccion.html" class="nav-item">
+            <a href="rendimiento.html" class="nav-item">
                 <i class="fas fa-chart-line"></i>
-                <span>Producción</span>
+                <span>Rendimiento</span>
             </a>
             <a href="presentismo.html" class="nav-item">
                 <i class="fas fa-user-check"></i>
@@ -510,14 +531,19 @@
         // ============================================
         const CONFIG = {
             SUBMODULOS: {
-            produccion: {
-                nombre: 'Producción',
-                archivo: 'produccion.html',
+            rendimiento: {
+                nombre: 'Rendimiento',
+                archivo: 'rendimiento.html',
                 disponible: true
             },
             presentismo: {
                 nombre: 'Presentismo',
                 archivo: 'presentismo.html',
+                disponible: true
+            },
+            utilidades: {
+                nombre: 'Utilidades',
+                archivo: 'utilidades.html',
                 disponible: true
             }
             }
@@ -617,11 +643,11 @@
 
         // Manejar teclas de acceso rápido
         document.addEventListener('keydown', function(e) {
-            // Ctrl + 1 para Producción, Ctrl + 2 para Presentismo
+            // Ctrl + 1 para Rendimiento, Ctrl + 2 para Presentismo
             if (e.ctrlKey) {
                 if (e.key === '1') {
                     e.preventDefault();
-                    abrirSubmodulo('produccion');
+                    abrirSubmodulo('rendimiento');
                 } else if (e.key === '2') {
                     e.preventDefault();
                     abrirSubmodulo('presentismo');

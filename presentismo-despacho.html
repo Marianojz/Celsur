@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Control de Presentismo</title>
+    <title>Sistema de Control de Presentismo - Despacho</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --primary-color: #2c3e50;
@@ -462,24 +463,16 @@
                 <i class="fas fa-tachometer-alt"></i>
                 <span>Jefatura</span>
             </a>
-            <a href="ventilacion.html" class="nav-item">
-                <i class="fas fa-wind"></i>
-                <span>Ventilación</span>
-            </a>
-            <a href="rendimiento.html" class="nav-item">
-                <i class="fas fa-chart-line"></i>
-                <span>Rendimiento</span>
-            </a>
-            <a href="presentismo.html" class="nav-item active">
+            <a href="presentismo-despacho.html" class="nav-item active">
                 <i class="fas fa-user-check"></i>
-                <span>Presentismo</span>
+                <span>Presentismo Despacho</span>
             </a>
         </div>
     </div>
 
     <header>
         <div class="header-content">
-            <div class="logo">Sistema de Presentismo</div>
+            <div class="logo">Sistema de Presentismo - Despacho</div>
             <div class="current-date" id="current-date"></div>
         </div>
     </header>
@@ -735,7 +728,7 @@
         // ============================================
         // VARIABLES GLOBALES
         // ============================================
-        let employees = [];
+        let employees = []; // Lista vacía - lista para completar
         let currentDate = new Date();
         let currentMonth = currentDate.getMonth();
         let currentYear = currentDate.getFullYear();
@@ -753,7 +746,7 @@
             try {
                 initializeApp();
                 setupEventListeners();
-                loadEmployeesFromSampleData();
+                // No cargar datos de ejemplo - lista vacía
                 renderAttendanceTable();
                 renderUsersTable();
                 updateStats();
@@ -848,51 +841,6 @@
                         modal.style.display = 'none';
                     }
                 });
-            });
-        }
-
-        function loadEmployeesFromSampleData() {
-            // Datos de ejemplo basados en el archivo proporcionado
-            employees = [
-                { id: 1, turn: 1, name: "Zequeira Mariano", absences: 0, late: 0, contract: "EF", function: "Supervisor", startDate: "2023-01-15", notes: "", attendance: {} },
-                { id: 2, turn: 1, name: "Mendoza Victor", absences: 0, late: 0, contract: "EF", function: "Administrativo", startDate: "2023-02-10", notes: "", attendance: {} },
-                { id: 3, turn: 1, name: "Amaranto Paúl", absences: 0, late: 0, contract: "EF", function: "control", startDate: "2023-03-05", notes: "", attendance: {} },
-                { id: 4, turn: 2, name: "Petriello Walter", absences: 0, late: 0, contract: "EF", function: "control", startDate: "2023-01-20", notes: "", attendance: {} },
-                { id: 5, turn: 3, name: "Rodriguez Jonathan", absences: 0, late: 0, contract: "EF", function: "control", startDate: "2023-02-15", notes: "", attendance: {} },
-                { id: 6, turn: 4, name: "Morel Fernando", absences: 0, late: 0, contract: "EF", function: "control", startDate: "2023-03-01", notes: "", attendance: {} },
-                { id: 7, turn: 1, name: "Taboada Hector", absences: 0, late: 0, contract: "EF", function: "Ventilador", startDate: "2023-01-10", notes: "", attendance: {} },
-                { id: 8, turn: 2, name: "Coronel Yoel", absences: 0, late: 0, contract: "EF", function: "Ventilador", startDate: "2023-02-05", notes: "", attendance: {} },
-                { id: 9, turn: 3, name: "Mansueti Claudio", absences: 0, late: 0, contract: "EF", function: "Ventilador", startDate: "2023-03-12", notes: "", attendance: {} },
-                { id: 10, turn: 4, name: "Centurion Gaston", absences: 0, late: 0, contract: "EF", function: "Ventilador", startDate: "2023-01-25", notes: "", attendance: {} },
-                { id: 11, turn: 5, name: "Sanchez Braian", absences: 0, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-04-01", notes: "", attendance: {} },
-                { id: 12, turn: 6, name: "Escalante Ignacio", absences: 0, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-04-10", notes: "", attendance: {} },
-                { id: 13, turn: 7, name: "ARIAS IVAN", absences: 0, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-04-15", notes: "", attendance: {} },
-                { id: 14, turn: 8, name: "SIERRA AGUSTIN", absences: 0, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-05-01", notes: "", attendance: {} },
-                { id: 15, turn: 9, name: "GALARZA ALAN", absences: 0, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-05-10", notes: "", attendance: {} },
-                { id: 16, turn: 10, name: "AGUIRRE NAHUEL", absences: 0, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-05-20", notes: "", attendance: {} },
-                { id: 17, turn: 11, name: "ZURITA JUAN ANDRES", absences: 0, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-06-01", notes: "", attendance: {} },
-                { id: 19, turn: 12, name: "OSES CIRO", absences: 3, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-06-10", notes: "", attendance: {} },
-                { id: 21, turn: 13, name: "MANSILLA NICOLAS", absences: 0, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-06-15", notes: "", attendance: {} },
-                { id: 22, turn: 14, name: "MUÑOZ EZEQUIEL", absences: 1, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-07-01", notes: "", attendance: {} },
-                { id: 23, turn: 15, name: "SANCHEZ EMILIANO", absences: 0, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-07-10", notes: "", attendance: {} },
-                { id: 24, turn: 1, name: "Aguirre Juan", absences: 0, late: 0, contract: "EF", function: "Acarreador", startDate: "2023-01-05", notes: "", attendance: {} },
-                { id: 25, turn: 2, name: "Bordon Enrique", absences: 1, late: 0, contract: "EF", function: "Acarreador", startDate: "2023-02-20", notes: "", attendance: {} },
-                { id: 26, turn: 1, name: "Germiniani Carlos", absences: 0, late: 0, contract: "EF", function: "Ayudante", startDate: "2023-03-10", notes: "", attendance: {} },
-                { id: 27, turn: 2, name: "Zarza Alexis", absences: 0, late: 0, contract: "EF", function: "Ayudante", startDate: "2023-03-25", notes: "", attendance: {} }
-            ];
-            
-            // Simular algunos datos de asistencia
-            employees.forEach(emp => {
-                for (let day = 1; day <= 31; day++) {
-                    const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    if (Math.random() > 0.2) {
-                        emp.attendance[dateKey] = 'P';
-                    } else if (Math.random() > 0.7) {
-                        emp.attendance[dateKey] = 'A';
-                    } else if (Math.random() > 0.8) {
-                        emp.attendance[dateKey] = 'CT';
-                    }
-                }
             });
         }
 
@@ -1340,7 +1288,7 @@
             // En una aplicación real, aquí se enviarían los datos al servidor
             alert('Presentismo guardado correctamente');
             // Simular guardado en base de datos
-            localStorage.setItem('attendanceData', JSON.stringify(employees));
+            localStorage.setItem('attendanceDataDespacho', JSON.stringify(employees));
         }
 
         function generateReport() {
@@ -1459,15 +1407,15 @@
             switch(reportType) {
                 case 'attendance':
                     datosExcel = generarDatosExcelAsistencia(reportMonth, reportYear);
-                    nombreArchivo = `Asistencia_${getMonthName(reportMonth)}_${reportYear}.xlsx`;
+                    nombreArchivo = `Asistencia_Despacho_${getMonthName(reportMonth)}_${reportYear}.xlsx`;
                     break;
                 case 'absences':
                     datosExcel = generarDatosExcelAusencias(reportMonth, reportYear);
-                    nombreArchivo = `Ausencias_${getMonthName(reportMonth)}_${reportYear}.xlsx`;
+                    nombreArchivo = `Ausencias_Despacho_${getMonthName(reportMonth)}_${reportYear}.xlsx`;
                     break;
                 case 'contract':
                     datosExcel = generarDatosExcelContrato(reportMonth, reportYear);
-                    nombreArchivo = `Resumen_Contrato_${getMonthName(reportMonth)}_${reportYear}.xlsx`;
+                    nombreArchivo = `Resumen_Contrato_Despacho_${getMonthName(reportMonth)}_${reportYear}.xlsx`;
                     break;
             }
             
@@ -1589,3 +1537,4 @@
     </script>
 </body>
 </html>
+
