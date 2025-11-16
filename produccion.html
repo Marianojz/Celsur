@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rendimiento Ventilación Op. Makro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --gray: #95a5a6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            overflow: hidden;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: var(--light);
+            color: var(--dark);
+            font-size: 0.9em;
+        }
+
+        .upload-area {
+            border: 3px dashed var(--light);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--light);
+        }
+
+        .upload-area:hover {
+            border-color: var(--secondary);
+            background: #f8f9fa;
+            transform: translateY(-2px);
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            color: var(--gray);
+            margin-bottom: 15px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 8px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-download {
+            background: linear-gradient(135deg, var(--success), #2ecc71);
+        }
+
+        .btn-simple {
+            background: linear-gradient(135deg, var(--warning), #e67e22);
+        }
+
+        .btn-clear {
+            background: linear-gradient(135deg, var(--accent), #c0392b);
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 15px;
+            background: var(--light);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 13px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tr:hover {
+            background-color: #e3f2fd;
+        }
+
+        /* Colores para tiempo muerto */
+        .tiempo-3min {
+            background: linear-gradient(90deg, rgba(255, 255, 0, 0.1) 0%, transparent 100%) !important;
+            border-left: 4px solid #FFD700;
+        }
+
+        .tiempo-5min {
+            background: linear-gradient(90deg, rgba(255, 165, 0, 0.1) 0%, transparent 100%) !important;
+            border-left: 4px solid #FFA500;
+        }
+
+        .tiempo-10min {
+            background: linear-gradient(90deg, rgba(255, 0, 0, 0.1) 0%, transparent 100%) !important;
+            border-left: 4px solid #FF0000;
+        }
+
+        .total-row {
+            background: linear-gradient(135deg, var(--dark), #34495e) !important;
+            color: white;
+            font-weight: bold;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--secondary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .file-info {
+            margin: 15px;
+            padding: 12px;
+            background: var(--success);
+            color: white;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .error {
+            color: var(--accent);
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 12px;
+            border-radius: 10px;
+            margin: 15px;
+            text-align: center;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 15px;
+            padding: 15px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .chart-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .chart-title {
+            text-align: center;
+            margin-bottom: 12px;
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 1em;
+        }
+
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            padding: 15px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            opacity: 0.9;
+        }
+
+        .results-section {
+            display: none;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .semaforo-leyenda {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 10px 0;
+            padding: 8px;
+            flex-wrap: wrap;
+        }
+
+        .leyenda-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.85em;
+        }
+
+        .leyenda-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .color-3min { background-color: #FFD700; }
+        .color-5min { background-color: #FFA500; }
+        .color-10min { background-color: #FF0000; }
+
+        .familia-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            margin: 2px;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            border-radius: 15px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        /* Menú de navegación */
+        .nav-menu {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .nav-toggle {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .nav-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .nav-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 10px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            min-width: 250px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .nav-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--primary);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .nav-item:last-child {
+            border-bottom: none;
+        }
+
+        .nav-item:hover {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .nav-item i {
+            font-size: 1.2em;
+            width: 25px;
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .upload-area {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+            
+            table {
+                font-size: 11px;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+
+            .nav-menu {
+                top: 10px;
+                right: 10px;
+            }
+
+            .nav-toggle {
+                padding: 10px 15px;
+                font-size: 0.9em;
+            }
+
+            .nav-dropdown {
+                min-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Menú de navegación -->
+    <div class="nav-menu">
+        <div class="nav-toggle" onclick="toggleNav()">
+            <i class="fas fa-bars"></i>
+            <span>Menú</span>
+        </div>
+        <div class="nav-dropdown" id="navDropdown">
+            <a href="index.html" class="nav-item">
+                <i class="fas fa-home"></i>
+                <span>Inicio</span>
+            </a>
+            <a href="ventilacion.html" class="nav-item">
+                <i class="fas fa-wind"></i>
+                <span>Ventilación</span>
+            </a>
+            <a href="produccion.html" class="nav-item active">
+                <i class="fas fa-chart-line"></i>
+                <span>Producción</span>
+            </a>
+            <a href="presentismo.html" class="nav-item">
+                <i class="fas fa-user-check"></i>
+                <span>Presentismo</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-wind"></i> Rendimiento Ventilación Op. Makro</h1>
+            <p>Sistema de análisis de productividad y eficiencia operacional</p>
+        </div>
+        
+        <div class="upload-area" id="uploadArea">
+            <input type="file" id="excelFile" class="file-input" accept=".xls,.xlsx">
+            <div>
+                <div class="upload-icon">
+                    <i class="fas fa-file-excel"></i>
+                </div>
+                <h3>Arrastra tu archivo Excel aquí</h3>
+                <p>Formato: tiempo muerto.xlsx</p>
+                <button class="btn" id="selectFileBtn">
+                    <i class="fas fa-search"></i> Seleccionar Archivo
+                </button>
+            </div>
+        </div>
+        
+        <div class="file-info" id="fileInfo" style="display: none;"></div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analizando tiempo muerto...</p>
+        </div>
+        
+        <div id="errorContainer"></div>
+        
+        <div class="results-section" id="resultsSection">
+            <div class="stats-cards" id="statsCards"></div>
+            
+            <div class="semaforo-leyenda">
+                <div class="leyenda-item">
+                    <div class="leyenda-color color-3min"></div>
+                    <span>Tiempo muerto +3min</span>
+                </div>
+                <div class="leyenda-item">
+                    <div class="leyenda-color color-5min"></div>
+                    <span>Tiempo muerto +5min</span>
+                </div>
+                <div class="leyenda-item">
+                    <div class="leyenda-color color-10min"></div>
+                    <span>Tiempo muerto +10min</span>
+                </div>
+            </div>
+            
+            <div id="resultado"></div>
+            
+            <div class="actions">
+                <button class="btn btn-simple" onclick="descargarExcelSimple()">
+                    <i class="fas fa-file-export"></i> Exportar Simple
+                </button>
+                <button class="btn btn-download" onclick="descargarExcelCompleto()">
+                    <i class="fas fa-download"></i> Descargar Completo
+                </button>
+                <button class="btn btn-clear" onclick="limpiarTodo()">
+                    <i class="fas fa-broom"></i> Limpiar Análisis
+                </button>
+            </div>
+            
+            <div class="charts-container">
+                <div class="chart-card">
+                    <div class="chart-title">Distribución de Familias (por bultos)</div>
+                    <canvas id="familiaChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Top 5 Usuarios por Paradas</div>
+                    <canvas id="paradasChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Top 5 Usuarios por Bultos</div>
+                    <canvas id="bultosChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Proyección de Productividad</div>
+                    <canvas id="proyeccionChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Tiempo Muerto vs Activo (+5min)</div>
+                    <canvas id="tiempoChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Top 10 Paradas</div>
+                    <canvas id="topParadasChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Hecho por Mzequeira | Rendimiento Ventilación Op. Makro</p>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURACIÓN Y CONSTANTES
+        // ============================================
+        const CONFIG = {
+            MAX_FILE_SIZE_MB: 50,
+            ACCEPTED_FORMATS: ['.xls', '.xlsx'],
+            TIEMPO_MUERTO_UMBRALES: {
+                MIN_3: 3,
+                MIN_5: 5,
+                MIN_10: 10
+            },
+            DESCUENTO_DESCANSO_MINUTOS: 20,
+            HORARIOS_DESCANSO: [
+                { inicio: 10, fin: 11 },
+                { inicio: 18, fin: 19 }
+            ]
+        };
+
+        // ============================================
+        // VARIABLES GLOBALES
+        // ============================================
+        let datosProcesados = null;
+        let charts = {};
+
+        // ============================================
+        // ELEMENTOS DEL DOM
+        // ============================================
+        const DOM = {
+            excelFileInput: document.getElementById('excelFile'),
+            uploadArea: document.getElementById('uploadArea'),
+            resultadoDiv: document.getElementById('resultado'),
+            loadingDiv: document.getElementById('loading'),
+            fileInfoDiv: document.getElementById('fileInfo'),
+            errorContainer: document.getElementById('errorContainer'),
+            resultsSection: document.getElementById('resultsSection'),
+            statsCards: document.getElementById('statsCards')
+        };
+
+        // Validar que todos los elementos existan
+        Object.entries(DOM).forEach(([key, element]) => {
+            if (!element) {
+                console.error(`Elemento DOM no encontrado: ${key}`);
+            }
+        });
+
+        // ============================================
+        // FUNCIONES DE UTILIDAD
+        // ============================================
+        
+        /**
+         * Limpia todos los datos y gráficos del análisis
+         */
+        function limpiarTodo() {
+            datosProcesados = null;
+            DOM.resultadoDiv.innerHTML = '';
+            DOM.errorContainer.innerHTML = '';
+            DOM.fileInfoDiv.style.display = 'none';
+            DOM.statsCards.innerHTML = '';
+            
+            // Destruir todos los gráficos existentes
+            Object.values(charts).forEach(chart => {
+                if (chart && typeof chart.destroy === 'function') {
+                    chart.destroy();
+                }
+            });
+            charts = {};
+            
+            DOM.excelFileInput.value = '';
+            DOM.resultsSection.style.display = 'none';
+        }
+
+        /**
+         * Valida si un archivo es válido para procesar
+         * @param {File} file - Archivo a validar
+         * @returns {Object} { valido: boolean, mensaje: string }
+         */
+        function validarArchivo(file) {
+            if (!file) {
+                return { valido: false, mensaje: 'No se seleccionó ningún archivo' };
+            }
+
+            const extension = '.' + file.name.split('.').pop().toLowerCase();
+            if (!CONFIG.ACCEPTED_FORMATS.includes(extension)) {
+                return { 
+                    valido: false, 
+                    mensaje: `Formato no válido. Formatos aceptados: ${CONFIG.ACCEPTED_FORMATS.join(', ')}` 
+                };
+            }
+
+            const sizeMB = file.size / (1024 * 1024);
+            if (sizeMB > CONFIG.MAX_FILE_SIZE_MB) {
+                return { 
+                    valido: false, 
+                    mensaje: `El archivo es demasiado grande. Tamaño máximo: ${CONFIG.MAX_FILE_SIZE_MB} MB` 
+                };
+            }
+
+            return { valido: true, mensaje: '' };
+        }
+
+        // ============================================
+        // EVENTOS Y MANEJO DE INTERACCIÓN
+        // ============================================
+        
+        /**
+         * Inicializa los event listeners
+         */
+        function inicializarEventos() {
+            // Evento para selección de archivo
+            DOM.excelFileInput.addEventListener('change', function(e) {
+                if (this.files && this.files.length > 0) {
+                    procesarExcel(this.files[0]);
+                }
+            });
+
+            // Evento para botón de selección de archivo
+            const selectFileBtn = document.getElementById('selectFileBtn');
+            if (selectFileBtn) {
+                selectFileBtn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Prevenir que el evento se propague al uploadArea
+                    DOM.excelFileInput.click();
+                });
+            }
+
+            // Evento para área de carga (solo si no se hace clic en el botón)
+            DOM.uploadArea.addEventListener('click', function(e) {
+                // Solo abrir selector si el clic NO fue en el botón
+                if (e.target !== selectFileBtn && !selectFileBtn.contains(e.target)) {
+                    DOM.excelFileInput.click();
+                }
+            });
+
+            // Prevenir comportamiento por defecto al arrastrar archivos
+            DOM.uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                DOM.uploadArea.style.borderColor = 'var(--secondary)';
+            });
+
+            DOM.uploadArea.addEventListener('dragleave', () => {
+                DOM.uploadArea.style.borderColor = 'var(--light)';
+            });
+
+            DOM.uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                DOM.uploadArea.style.borderColor = 'var(--light)';
+                
+                const files = e.dataTransfer.files;
+                if (files && files.length > 0) {
+                    procesarExcel(files[0]);
+                }
+            });
+        }
+
+        // Inicializar eventos al cargar la página
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', inicializarEventos);
+        } else {
+            inicializarEventos();
+        }
+
+        /**
+         * Procesa un archivo Excel y genera el análisis
+         * @param {File} file - Archivo Excel a procesar
+         */
+        function procesarExcel(file) {
+            // Validar archivo antes de procesar
+            const validacion = validarArchivo(file);
+            if (!validacion.valido) {
+                mostrarError(validacion.mensaje);
+                return;
+            }
+
+            // Limpiar resultados anteriores
+            DOM.resultadoDiv.innerHTML = '';
+            DOM.errorContainer.innerHTML = '';
+            DOM.statsCards.innerHTML = '';
+            
+            // Destruir gráficos anteriores
+            Object.values(charts).forEach(chart => {
+                if (chart && typeof chart.destroy === 'function') {
+                    chart.destroy();
+                }
+            });
+            charts = {};
+            
+            // Mostrar información del archivo
+            DOM.fileInfoDiv.style.display = 'block';
+            DOM.fileInfoDiv.innerHTML = `
+                <i class="fas fa-file-excel"></i> 
+                <strong>Archivo:</strong> ${escapeHtml(file.name)} 
+                (${(file.size / 1024 / 1024).toFixed(2)} MB)
+            `;
+            
+            // Mostrar indicador de carga
+            DOM.loadingDiv.style.display = 'block';
+            DOM.resultsSection.style.display = 'none';
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    if (!e.target || !e.target.result) {
+                        throw new Error('No se pudo leer el contenido del archivo');
+                    }
+
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    
+                    if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+                        throw new Error('El archivo Excel no contiene hojas de cálculo');
+                    }
+                    
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    
+                    if (!worksheet) {
+                        throw new Error('No se pudo leer la hoja de cálculo');
+                    }
+                    
+                    // Leer datos manteniendo el formato original
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+                        defval: "",
+                        raw: true,
+                        header: 1
+                    });
+                    
+                    if (!jsonData || jsonData.length < 2) {
+                        throw new Error('El archivo no contiene suficientes datos para procesar');
+                    }
+                    
+                    procesarDatosTiempoMuerto(jsonData);
+                    
+                } catch (error) {
+                    console.error('Error procesando Excel:', error);
+                    mostrarError(`Error al procesar el archivo: ${error.message || 'Error desconocido'}`);
+                } finally {
+                    DOM.loadingDiv.style.display = 'none';
+                }
+            };
+            
+            reader.onerror = function() {
+                DOM.loadingDiv.style.display = 'none';
+                mostrarError('Error al leer el archivo. Por favor, verifique que el archivo no esté corrupto.');
+            };
+            
+            reader.onabort = function() {
+                DOM.loadingDiv.style.display = 'none';
+                mostrarError('La lectura del archivo fue cancelada');
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        /**
+         * Escapa HTML para prevenir XSS
+         * @param {string} text - Texto a escapar
+         * @returns {string} Texto escapado
+         */
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Función mejorada para parsear fechas
+        function parsearFecha(fechaStr) {
+            if (!fechaStr) return null;
+            
+            try {
+                if (fechaStr instanceof Date) {
+                    return fechaStr;
+                }
+                
+                if (typeof fechaStr === 'number') {
+                    return XLSX.SSF.parse_date_code(fechaStr);
+                }
+                
+                const str = fechaStr.toString().trim();
+                
+                // Formato dd/mm/aaaa hh:mm:ss
+                if (str.includes('/')) {
+                    const [fechaPart, tiempoPart] = str.split(' ');
+                    const [dia, mes, anio] = fechaPart.split('/');
+                    const [hora, minuto, segundo] = tiempoPart ? tiempoPart.split(':') : ['00', '00', '00'];
+                    
+                    const fechaISO = `${anio}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}T${hora.padStart(2, '0')}:${minuto.padStart(2, '0')}:${segundo.padStart(2, '0')}`;
+                    const fecha = new Date(fechaISO);
+                    
+                    if (!isNaN(fecha.getTime())) {
+                        return fecha;
+                    }
+                }
+                
+                const fechaDirecta = new Date(str);
+                if (!isNaN(fechaDirecta.getTime())) {
+                    return fechaDirecta;
+                }
+                
+                console.warn('No se pudo parsear la fecha:', fechaStr);
+                return null;
+                
+            } catch (error) {
+                console.warn('Error parseando fecha:', fechaStr, error);
+                return null;
+            }
+        }
+
+        // Función principal para procesar datos de tiempo muerto
+        function procesarDatosTiempoMuerto(jsonData) {
+            const usuarios = {};
+            const familias = {};
+            const paradas = {};
+            
+            let primeraFecha = null;
+            let datosFiltrados = [];
+            
+            // Obtener índices de columnas
+            const headers = jsonData[0] || [];
+            const indices = {
+                fecha: headers.findIndex(h => h && h.toString().toLowerCase().includes('fecha')),
+                usuario: headers.findIndex(h => h && h.toString().toLowerCase().includes('usuario')),
+                bultos: headers.findIndex(h => h && (h.toString().toLowerCase().includes('bl') || h.toString().toLowerCase().includes('bulto'))),
+                areaDestino: headers.findIndex(h => h && (h.toString().toLowerCase().includes('área') || h.toString().toLowerCase().includes('area'))),
+                numeroCarga: headers.findIndex(h => h && h.toString().toLowerCase().includes('carga'))
+            };
+            
+            // Procesar filas de datos
+            for (let i = 1; i < jsonData.length; i++) {
+                const fila = jsonData[i];
+                if (!fila || fila.length < 5) continue;
+                
+                const fechaStr = fila[indices.fecha];
+                const usuario = fila[indices.usuario];
+                const bultos = parseInt(fila[indices.bultos]) || 0;
+                const areaDestino = fila[indices.areaDestino];
+                const numeroCarga = fila[indices.numeroCarga];
+                
+                if (!usuario || !fechaStr) continue;
+                
+                const fecha = parsearFecha(fechaStr);
+                if (!fecha) continue;
+                
+                if (!primeraFecha || fecha < primeraFecha) {
+                    primeraFecha = fecha;
+                }
+                
+                datosFiltrados.push({
+                    fecha,
+                    usuario: usuario.toString().trim(),
+                    bultos,
+                    areaDestino: areaDestino ? areaDestino.toString().trim() : 'Sin área',
+                    numeroCarga: numeroCarga ? numeroCarga.toString().trim() : 'Sin carga'
+                });
+                
+                // Estadísticas de familias
+                const familia = extraerFamilia(numeroCarga);
+                if (!familias[familia]) {
+                    familias[familia] = { bultos: 0, paradas: 0 };
+                }
+                familias[familia].bultos += bultos;
+                familias[familia].paradas++;
+                
+                // Estadísticas de paradas
+                const areaKey = areaDestino ? areaDestino.toString().trim() : 'Sin área';
+                if (!paradas[areaKey]) {
+                    paradas[areaKey] = 0;
+                }
+                paradas[areaKey]++;
+            }
+            
+            // Ordenar por fecha
+            datosFiltrados.sort((a, b) => a.fecha - b.fecha);
+            
+            // Calcular tiempo muerto por usuario
+            datosFiltrados.forEach((dato) => {
+                const usuario = dato.usuario;
+                
+                if (!usuarios[usuario]) {
+                    usuarios[usuario] = {
+                        transacciones: [],
+                        tiempoMuerto3min: { total: 0, veces: 0, promedio: 0 },
+                        tiempoMuerto5min: { total: 0, veces: 0, promedio: 0 },
+                        tiempoMuerto10min: { total: 0, veces: 0, promedio: 0 },
+                        totalParadas: 0,
+                        totalBultos: 0,
+                        primeraTransaccion: dato.fecha,
+                        ultimaTransaccion: dato.fecha,
+                        familias: {},
+                        tiempoTotalTrabajo: 0,
+                        eficienciaParadasMinuto: 0
+                    };
+                }
+                
+                usuarios[usuario].transacciones.push(dato);
+                usuarios[usuario].totalParadas++;
+                usuarios[usuario].totalBultos += dato.bultos;
+                
+                // Estadísticas de familias por usuario
+                const familia = extraerFamilia(dato.numeroCarga);
+                if (!usuarios[usuario].familias[familia]) {
+                    usuarios[usuario].familias[familia] = 0;
+                }
+                usuarios[usuario].familias[familia]++;
+                
+                if (dato.fecha < usuarios[usuario].primeraTransaccion) {
+                    usuarios[usuario].primeraTransaccion = dato.fecha;
+                }
+                if (dato.fecha > usuarios[usuario].ultimaTransaccion) {
+                    usuarios[usuario].ultimaTransaccion = dato.fecha;
+                }
+            });
+            
+            // Calcular diferencias de tiempo y eficiencia
+            Object.keys(usuarios).forEach(usuario => {
+                const userData = usuarios[usuario];
+                const transacciones = userData.transacciones.sort((a, b) => a.fecha - b.fecha);
+                
+                // Calcular tiempo total de trabajo
+                userData.tiempoTotalTrabajo = (userData.ultimaTransaccion - userData.primeraTransaccion) / (1000 * 60); // en minutos
+                
+                // Calcular eficiencia (paradas por minuto)
+                userData.eficienciaParadasMinuto = userData.tiempoTotalTrabajo > 0 ? 
+                    (userData.totalParadas / userData.tiempoTotalTrabajo).toFixed(3) : 0;
+                
+                // Calcular tiempo muerto
+                for (let i = 1; i < transacciones.length; i++) {
+                    const diffMs = transacciones[i].fecha - transacciones[i-1].fecha;
+                    const diffMinutos = diffMs / (1000 * 60);
+                    
+                    if (diffMinutos > 3) {
+                        userData.tiempoMuerto3min.total += diffMinutos;
+                        userData.tiempoMuerto3min.veces++;
+                    }
+                    if (diffMinutos > 5) {
+                        userData.tiempoMuerto5min.total += diffMinutos;
+                        userData.tiempoMuerto5min.veces++;
+                    }
+                    if (diffMinutos > 10) {
+                        const horaTransaccion = transacciones[i-1].fecha.getHours();
+                        const diffAjustada = aplicarDescuentoDescanso(diffMinutos, horaTransaccion);
+                        userData.tiempoMuerto10min.total += diffAjustada;
+                        userData.tiempoMuerto10min.veces++;
+                    }
+                }
+                
+                // Calcular promedios de tiempo muerto
+                if (userData.tiempoMuerto3min.veces > 0) {
+                    userData.tiempoMuerto3min.promedio = userData.tiempoMuerto3min.total / userData.tiempoMuerto3min.veces;
+                }
+                if (userData.tiempoMuerto5min.veces > 0) {
+                    userData.tiempoMuerto5min.promedio = userData.tiempoMuerto5min.total / userData.tiempoMuerto5min.veces;
+                }
+                if (userData.tiempoMuerto10min.veces > 0) {
+                    userData.tiempoMuerto10min.promedio = userData.tiempoMuerto10min.total / userData.tiempoMuerto10min.veces;
+                }
+            });
+            
+            datosProcesados = {
+                usuarios,
+                familias,
+                paradas,
+                datosFiltrados,
+                primeraFecha
+            };
+            
+            mostrarResultadosTiempoMuerto();
+            mostrarGraficosTiempoMuerto();
+            DOM.resultsSection.style.display = 'block';
+        }
+
+        /**
+         * Aplica descuento de tiempo de descanso si corresponde
+         * @param {number} diffMinutos - Diferencia de tiempo en minutos
+         * @param {number} hora - Hora de la transacción
+         * @returns {number} Tiempo ajustado después del descuento
+         */
+        function aplicarDescuentoDescanso(diffMinutos, hora) {
+            const esHorarioDescanso = CONFIG.HORARIOS_DESCANSO.some(horario => 
+                hora >= horario.inicio && hora < horario.fin
+            );
+            
+            if (esHorarioDescanso) {
+                return Math.max(0, diffMinutos - CONFIG.DESCUENTO_DESCANSO_MINUTOS);
+            }
+            
+            return diffMinutos;
+        }
+
+        // Función para formatear tiempo
+        function formatearTiempo(minutos) {
+            if (minutos === 0) return '0 min';
+            if (minutos < 1) return '<1 min';
+            
+            if (minutos < 60) {
+                return `${Math.round(minutos)} min`;
+            }
+            const horas = Math.floor(minutos / 60);
+            const mins = Math.round(minutos % 60);
+            return mins > 0 ? `${horas}h ${mins}m` : `${horas}h`;
+        }
+
+        // Función para extraer familia
+        function extraerFamilia(numeroCarga) {
+            if (!numeroCarga || numeroCarga === 'Sin carga') return 'Sin Familia';
+            
+            const str = numeroCarga.toString();
+            const match = str.match(/^([A-Z]{2,3})-/);
+            if (match) {
+                return match[1];
+            }
+            
+            if (/^\d/.test(str)) {
+                return 'Pl Completo';
+            }
+            
+            return 'General';
+        }
+
+        // Función para obtener familias principales de usuario
+        function obtenerFamiliasUsuario(familiasData, totalParadas) {
+            const familiasArray = Object.entries(familiasData)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 2);
+            
+            return familiasArray.map(([familia, count]) => {
+                const porcentaje = ((count / totalParadas) * 100).toFixed(1);
+                return `${familia} ${porcentaje}%`;
+            }).join(' - ');
+        }
+
+        // Función para mostrar resultados
+        function mostrarResultadosTiempoMuerto() {
+            const { usuarios, familias, paradas } = datosProcesados;
+            
+            // Calcular totales
+            let totalTiempo3min = 0, totalVeces3min = 0;
+            let totalTiempo5min = 0, totalVeces5min = 0;
+            let totalTiempo10min = 0, totalVeces10min = 0;
+            let totalParadas = 0, totalBultos = 0;
+            let totalEficiencia = 0, countUsuarios = 0;
+            
+            Object.values(usuarios).forEach(user => {
+                totalTiempo3min += user.tiempoMuerto3min.total;
+                totalVeces3min += user.tiempoMuerto3min.veces;
+                totalTiempo5min += user.tiempoMuerto5min.total;
+                totalVeces5min += user.tiempoMuerto5min.veces;
+                totalTiempo10min += user.tiempoMuerto10min.total;
+                totalVeces10min += user.tiempoMuerto10min.veces;
+                totalParadas += user.totalParadas;
+                totalBultos += user.totalBultos;
+                totalEficiencia += parseFloat(user.eficienciaParadasMinuto);
+                countUsuarios++;
+            });
+            
+            const promedioEficiencia = countUsuarios > 0 ? (totalEficiencia / countUsuarios).toFixed(3) : 0;
+            const promedioTiempo5min = totalVeces5min > 0 ? formatearTiempo(totalTiempo5min / totalVeces5min) : '0 min';
+            
+            DOM.statsCards.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${Object.keys(usuarios).length}</div>
+                    <div class="stat-label">Total Usuarios</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${totalParadas}</div>
+                    <div class="stat-label">Total Paradas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${totalBultos}</div>
+                    <div class="stat-label">Total Bultos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${formatearTiempo(totalTiempo5min)}</div>
+                    <div class="stat-label">Tiempo +5min (${totalVeces5min} veces)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${promedioTiempo5min}</div>
+                    <div class="stat-label">Promedio +5min</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${promedioEficiencia}</div>
+                    <div class="stat-label">Eficiencia Promedio (paradas/min)</div>
+                </div>
+            `;
+            
+            // Mostrar tabla detallada
+            let html = `
+                <div style="margin: 15px;">
+                    <h3 style="color: var(--primary); margin-bottom: 15px;">
+                        <i class="fas fa-users"></i> Análisis de Tiempo Muerto por Usuario
+                    </h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Paradas</th>
+                            <th>Bultos</th>
+                            <th>Eficiencia (paradas/min)</th>
+                            <th>Familias (%)</th>
+                            <th>+3min (Total/Veces/Prom)</th>
+                            <th>+5min (Total/Veces/Prom)</th>
+                            <th>+10min (Total/Veces/Prom)</th>
+                            <th>Horario Trabajo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            const usuariosOrdenados = Object.keys(usuarios).sort((a, b) => usuarios[b].totalParadas - usuarios[a].totalParadas);
+            
+            usuariosOrdenados.forEach(usuario => {
+                const user = usuarios[usuario];
+                let rowClass = '';
+                
+                if (user.tiempoMuerto10min.veces > 0) {
+                    rowClass = 'tiempo-10min';
+                } else if (user.tiempoMuerto5min.veces > 0) {
+                    rowClass = 'tiempo-5min';
+                } else if (user.tiempoMuerto3min.veces > 0) {
+                    rowClass = 'tiempo-3min';
+                }
+                
+                const horario = `${user.primeraTransaccion.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})} - ${user.ultimaTransaccion.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})}`;
+                const familiasUsuario = obtenerFamiliasUsuario(user.familias, user.totalParadas);
+                
+                html += `
+                    <tr class="${rowClass}">
+                        <td><strong>${usuario}</strong></td>
+                        <td>${user.totalParadas}</td>
+                        <td>${user.totalBultos}</td>
+                        <td>${user.eficienciaParadasMinuto}</td>
+                        <td>${familiasUsuario}</td>
+                        <td>${formatearTiempo(user.tiempoMuerto3min.total)} / ${user.tiempoMuerto3min.veces} / ${formatearTiempo(user.tiempoMuerto3min.promedio)}</td>
+                        <td>${formatearTiempo(user.tiempoMuerto5min.total)} / ${user.tiempoMuerto5min.veces} / ${formatearTiempo(user.tiempoMuerto5min.promedio)}</td>
+                        <td>${formatearTiempo(user.tiempoMuerto10min.total)} / ${user.tiempoMuerto10min.veces} / ${formatearTiempo(user.tiempoMuerto10min.promedio)}</td>
+                        <td>${horario}</td>
+                    </tr>
+                `;
+            });
+            
+            // Agregar fila de totales
+            html += `
+                    <tr class="total-row">
+                        <td><strong>TOTALES</strong></td>
+                        <td><strong>${totalParadas}</strong></td>
+                        <td><strong>${totalBultos}</strong></td>
+                        <td><strong>${promedioEficiencia}</strong></td>
+                        <td></td>
+                        <td><strong>${formatearTiempo(totalTiempo3min)} / ${totalVeces3min} / ${totalVeces3min > 0 ? formatearTiempo(totalTiempo3min / totalVeces3min) : '0 min'}</strong></td>
+                        <td><strong>${formatearTiempo(totalTiempo5min)} / ${totalVeces5min} / ${promedioTiempo5min}</strong></td>
+                        <td><strong>${formatearTiempo(totalTiempo10min)} / ${totalVeces10min} / ${totalVeces10min > 0 ? formatearTiempo(totalTiempo10min / totalVeces10min) : '0 min'}</strong></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+            `;
+            
+            DOM.resultadoDiv.innerHTML = html;
+        }
+
+        // Función para descargar Excel simple
+        function descargarExcelSimple() {
+            if (!datosProcesados) return;
+            
+            const { usuarios } = datosProcesados;
+            const datosExcel = [];
+            
+            // Encabezados
+            datosExcel.push(['Usuario', 'Paradas', 'Bultos', 'Eficiencia (paradas/min)', 'Familias Principales']);
+            
+            // Calcular totales
+            let totalParadas = 0, totalBultos = 0;
+            
+            // Datos de usuarios
+            Object.keys(usuarios).sort((a, b) => usuarios[b].totalParadas - usuarios[a].totalParadas).forEach(usuario => {
+                const user = usuarios[usuario];
+                const familiasUsuario = obtenerFamiliasUsuario(user.familias, user.totalParadas);
+                
+                datosExcel.push([
+                    usuario,
+                    user.totalParadas,
+                    user.totalBultos,
+                    user.eficienciaParadasMinuto,
+                    familiasUsuario
+                ]);
+                
+                totalParadas += user.totalParadas;
+                totalBultos += user.totalBultos;
+            });
+            
+            // Fila de totales
+            datosExcel.push(['TOTAL', totalParadas, totalBultos, '', '']);
+            
+            const ws = XLSX.utils.aoa_to_sheet(datosExcel);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Resumen_Simple");
+            
+            XLSX.writeFile(wb, "Resumen_Simple_Ventilacion_Makro.xlsx");
+        }
+
+        // Función para descargar Excel completo
+        function descargarExcelCompleto() {
+            if (!datosProcesados) return;
+            
+            const { usuarios } = datosProcesados;
+            const datosExcel = [];
+            
+            // Encabezados
+            datosExcel.push(['Usuario', 'Paradas', 'Bultos', 'Eficiencia (paradas/min)', 'Familias Principales',
+                           'Tiempo +3min Total', 'Veces +3min', 'Promedio +3min', 
+                           'Tiempo +5min Total', 'Veces +5min', 'Promedio +5min', 
+                           'Tiempo +10min Total', 'Veces +10min', 'Promedio +10min', 
+                           'Horario Inicio', 'Horario Fin']);
+            
+            // Calcular totales
+            let totalParadas = 0, totalBultos = 0;
+            let totalTiempo3min = 0, totalVeces3min = 0;
+            let totalTiempo5min = 0, totalVeces5min = 0;
+            let totalTiempo10min = 0, totalVeces10min = 0;
+            
+            // Datos de usuarios
+            Object.keys(usuarios).sort((a, b) => usuarios[b].totalParadas - usuarios[a].totalParadas).forEach(usuario => {
+                const user = usuarios[usuario];
+                const familiasUsuario = obtenerFamiliasUsuario(user.familias, user.totalParadas);
+                
+                datosExcel.push([
+                    usuario,
+                    user.totalParadas,
+                    user.totalBultos,
+                    user.eficienciaParadasMinuto,
+                    familiasUsuario,
+                    user.tiempoMuerto3min.total,
+                    user.tiempoMuerto3min.veces,
+                    user.tiempoMuerto3min.promedio,
+                    user.tiempoMuerto5min.total,
+                    user.tiempoMuerto5min.veces,
+                    user.tiempoMuerto5min.promedio,
+                    user.tiempoMuerto10min.total,
+                    user.tiempoMuerto10min.veces,
+                    user.tiempoMuerto10min.promedio,
+                    user.primeraTransaccion.toLocaleTimeString('es-ES'),
+                    user.ultimaTransaccion.toLocaleTimeString('es-ES')
+                ]);
+                
+                totalParadas += user.totalParadas;
+                totalBultos += user.totalBultos;
+                totalTiempo3min += user.tiempoMuerto3min.total;
+                totalVeces3min += user.tiempoMuerto3min.veces;
+                totalTiempo5min += user.tiempoMuerto5min.total;
+                totalVeces5min += user.tiempoMuerto5min.veces;
+                totalTiempo10min += user.tiempoMuerto10min.total;
+                totalVeces10min += user.tiempoMuerto10min.veces;
+            });
+            
+            // Fila de totales
+            const promedio3min = totalVeces3min > 0 ? (totalTiempo3min / totalVeces3min) : 0;
+            const promedio5min = totalVeces5min > 0 ? (totalTiempo5min / totalVeces5min) : 0;
+            const promedio10min = totalVeces10min > 0 ? (totalTiempo10min / totalVeces10min) : 0;
+            
+            datosExcel.push([
+                'TOTAL',
+                totalParadas,
+                totalBultos,
+                '',
+                '',
+                totalTiempo3min,
+                totalVeces3min,
+                promedio3min,
+                totalTiempo5min,
+                totalVeces5min,
+                promedio5min,
+                totalTiempo10min,
+                totalVeces10min,
+                promedio10min,
+                '',
+                ''
+            ]);
+            
+            const ws = XLSX.utils.aoa_to_sheet(datosExcel);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Resumen_Completo");
+            
+            XLSX.writeFile(wb, "Resumen_Completo_Ventilacion_Makro.xlsx");
+        }
+
+        // Función para mostrar gráficos
+        function mostrarGraficosTiempoMuerto() {
+            const { usuarios, familias, paradas } = datosProcesados;
+            
+            // Gráfico 1: Distribución de Familias por bultos
+            const familiasSorted = Object.entries(familias)
+                .sort((a, b) => b[1].bultos - a[1].bultos)
+                .slice(0, 8);
+            
+            const ctxFamilia = document.getElementById('familiaChart').getContext('2d');
+            charts.familia = new Chart(ctxFamilia, {
+                type: 'doughnut',
+                data: {
+                    labels: familiasSorted.map(f => f[0]),
+                    datasets: [{
+                        data: familiasSorted.map(f => f[1].bultos),
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Gráfico 2: Top 5 usuarios por paradas
+            const top5Paradas = Object.entries(usuarios)
+                .sort((a, b) => b[1].totalParadas - a[1].totalParadas)
+                .slice(0, 5);
+            
+            const ctxParadas = document.getElementById('paradasChart').getContext('2d');
+            charts.paradas = new Chart(ctxParadas, {
+                type: 'bar',
+                data: {
+                    labels: top5Paradas.map(u => u[0]),
+                    datasets: [{
+                        label: 'Paradas',
+                        data: top5Paradas.map(u => u[1].totalParadas),
+                        backgroundColor: '#36A2EB'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Gráfico 3: Top 5 usuarios por bultos
+            const top5Bultos = Object.entries(usuarios)
+                .sort((a, b) => b[1].totalBultos - a[1].totalBultos)
+                .slice(0, 5);
+            
+            const ctxBultos = document.getElementById('bultosChart').getContext('2d');
+            charts.bultos = new Chart(ctxBultos, {
+                type: 'bar',
+                data: {
+                    labels: top5Bultos.map(u => u[0]),
+                    datasets: [{
+                        label: 'Bultos',
+                        data: top5Bultos.map(u => u[1].totalBultos),
+                        backgroundColor: '#FFCE56'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Gráfico 4: Proyección de Productividad
+            const usuariosConEficiencia = Object.entries(usuarios)
+                .map(([nombre, datos]) => ({
+                    nombre,
+                    eficiencia: parseFloat(datos.eficienciaParadasMinuto) || 0
+                }))
+                .sort((a, b) => b.eficiencia - a.eficiencia)
+                .slice(0, 10);
+            
+            const ctxProyeccion = document.getElementById('proyeccionChart').getContext('2d');
+            charts.proyeccion = new Chart(ctxProyeccion, {
+                type: 'line',
+                data: {
+                    labels: usuariosConEficiencia.map(u => u.nombre),
+                    datasets: [{
+                        label: 'Eficiencia (paradas/min)',
+                        data: usuariosConEficiencia.map(u => u.eficiencia),
+                        borderColor: '#4BC0C0',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Gráfico 5: Tiempo Muerto vs Activo (+5min)
+            const usuariosTiempo = Object.entries(usuarios)
+                .map(([nombre, datos]) => ({
+                    nombre,
+                    tiempoMuerto: datos.tiempoMuerto5min.total,
+                    tiempoActivo: datos.tiempoTotalTrabajo - datos.tiempoMuerto5min.total
+                }))
+                .filter(u => u.tiempoActivo > 0)
+                .slice(0, 10);
+            
+            const ctxTiempo = document.getElementById('tiempoChart').getContext('2d');
+            charts.tiempo = new Chart(ctxTiempo, {
+                type: 'bar',
+                data: {
+                    labels: usuariosTiempo.map(u => u.nombre),
+                    datasets: [
+                        {
+                            label: 'Tiempo Activo (min)',
+                            data: usuariosTiempo.map(u => Math.max(0, u.tiempoActivo)),
+                            backgroundColor: '#27ae60'
+                        },
+                        {
+                            label: 'Tiempo Muerto +5min (min)',
+                            data: usuariosTiempo.map(u => u.tiempoMuerto),
+                            backgroundColor: '#e74c3c'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            stacked: true
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Gráfico 6: Top 10 Paradas
+            const paradasSorted = Object.entries(paradas)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            const ctxTopParadas = document.getElementById('topParadasChart').getContext('2d');
+            charts.topParadas = new Chart(ctxTopParadas, {
+                type: 'doughnut',
+                data: {
+                    labels: paradasSorted.map(p => p[0]),
+                    datasets: [{
+                        data: paradasSorted.map(p => p[1]),
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+                            '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Muestra un mensaje de error al usuario
+         * @param {string} mensaje - Mensaje de error a mostrar
+         */
+        function mostrarError(mensaje) {
+            if (!mensaje) return;
+            
+            DOM.errorContainer.innerHTML = `
+                <div class="error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Error:</strong> ${escapeHtml(mensaje)}
+                </div>
+            `;
+            DOM.loadingDiv.style.display = 'none';
+            
+            // Scroll suave hacia el error
+            DOM.errorContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        /**
+         * Muestra un mensaje de éxito (opcional, para futuras mejoras)
+         * @param {string} mensaje - Mensaje de éxito
+         */
+        function mostrarExito(mensaje) {
+            if (!mensaje) return;
+            
+            DOM.errorContainer.innerHTML = `
+                <div class="file-info" style="background: var(--success);">
+                    <i class="fas fa-check-circle"></i>
+                    <strong>Éxito:</strong> ${escapeHtml(mensaje)}
+                </div>
+            `;
+        }
+
+        /**
+         * Toggle del menú de navegación
+         */
+        function toggleNav() {
+            const dropdown = document.getElementById('navDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        // Cerrar menú al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            const navMenu = document.querySelector('.nav-menu');
+            const dropdown = document.getElementById('navDropdown');
+            if (!navMenu.contains(e.target) && dropdown.classList.contains('active')) {
+                dropdown.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
