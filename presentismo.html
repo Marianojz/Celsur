@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Control de Presentismo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 0;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .current-date {
+            font-size: 18px;
+        }
+        
+        .tabs {
+            display: flex;
+            background-color: var(--light-color);
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: 500;
+        }
+        
+        .tab.active {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .tab:hover:not(.active) {
+            background-color: #d6dbdf;
+        }
+        
+        .tab-content {
+            display: none;
+            background-color: white;
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .filter-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        select, input, button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        button {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        button.danger {
+            background-color: var(--danger-color);
+        }
+        
+        button.danger:hover {
+            background-color: #c0392b;
+        }
+        
+        button.success {
+            background-color: var(--success-color);
+        }
+        
+        button.success:hover {
+            background-color: #219955;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: var(--light-color);
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .status-presente {
+            background-color: var(--success-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .status-ausente {
+            background-color: var(--danger-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .status-cambio-turno {
+            background-color: var(--warning-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .status-cumpleanios {
+            background-color: #9b59b6;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .status-retira-antes {
+            background-color: #1abc9c;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .close-modal {
+            font-size: 24px;
+            cursor: pointer;
+            color: #777;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .day-cell {
+            text-align: center;
+            cursor: pointer;
+            min-width: 30px;
+        }
+        
+        .ev-countdown {
+            background-color: #f8f9fa;
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .notes-cell {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .notes-cell:hover {
+            overflow: visible;
+            white-space: normal;
+            background-color: white;
+            z-index: 10;
+            position: relative;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background-color: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            color: #777;
+            font-size: 14px;
+        }
+        
+        /* Menú de navegación */
+        .nav-menu {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .nav-toggle {
+            background: rgba(44, 62, 80, 0.9);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .nav-toggle:hover {
+            background: rgba(44, 62, 80, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .nav-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 10px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            min-width: 250px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .nav-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .nav-item:last-child {
+            border-bottom: none;
+        }
+
+        .nav-item:hover {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .nav-item i {
+            font-size: 1.2em;
+            width: 25px;
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+            
+            .filter-controls {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            table {
+                font-size: 12px;
+            }
+            
+            th, td {
+                padding: 5px;
+            }
+
+            .nav-menu {
+                top: 10px;
+                right: 10px;
+            }
+
+            .nav-toggle {
+                padding: 10px 15px;
+                font-size: 0.9em;
+            }
+
+            .nav-dropdown {
+                min-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Menú de navegación -->
+    <div class="nav-menu">
+        <div class="nav-toggle" onclick="toggleNav()">
+            <i class="fas fa-bars"></i>
+            <span>Menú</span>
+        </div>
+        <div class="nav-dropdown" id="navDropdown">
+            <a href="index.html" class="nav-item">
+                <i class="fas fa-home"></i>
+                <span>Inicio</span>
+            </a>
+            <a href="ventilacion.html" class="nav-item">
+                <i class="fas fa-wind"></i>
+                <span>Ventilación</span>
+            </a>
+            <a href="produccion.html" class="nav-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Producción</span>
+            </a>
+            <a href="presentismo.html" class="nav-item active">
+                <i class="fas fa-user-check"></i>
+                <span>Presentismo</span>
+            </a>
+        </div>
+    </div>
+
+    <header>
+        <div class="header-content">
+            <div class="logo">Sistema de Presentismo</div>
+            <div class="current-date" id="current-date"></div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" data-tab="attendance">Control de Presentismo</div>
+            <div class="tab" data-tab="users">Gestión de Usuarios</div>
+            <div class="tab" data-tab="reports">Reportes</div>
+        </div>
+        
+        <!-- Control de Presentismo -->
+        <div class="tab-content active" id="attendance-tab">
+            <div class="controls">
+                <div class="filter-controls">
+                    <select id="month-select">
+                        <option value="0">Enero</option>
+                        <option value="1">Febrero</option>
+                        <option value="2">Marzo</option>
+                        <option value="3">Abril</option>
+                        <option value="4">Mayo</option>
+                        <option value="5">Junio</option>
+                        <option value="6">Julio</option>
+                        <option value="7">Agosto</option>
+                        <option value="8">Septiembre</option>
+                        <option value="9">Octubre</option>
+                        <option value="10">Noviembre</option>
+                        <option value="11">Diciembre</option>
+                    </select>
+                    <select id="year-select">
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                    <select id="function-filter">
+                        <option value="all">Todas las funciones</option>
+                        <option value="Supervisor">Supervisor</option>
+                        <option value="Administrativo">Administrativo</option>
+                        <option value="control">Control</option>
+                        <option value="Ventilador">Ventilador</option>
+                        <option value="Acarreador">Acarreador</option>
+                        <option value="Ayudante">Ayudante</option>
+                    </select>
+                </div>
+                <button id="save-attendance">Guardar Presentismo</button>
+            </div>
+            
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-label">Total Empleados</div>
+                    <div class="stat-value" id="total-employees">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Presentes Hoy</div>
+                    <div class="stat-value" id="present-today">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Ausentes Hoy</div>
+                    <div class="stat-value" id="absent-today">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">EV con Countdown</div>
+                    <div class="stat-value" id="ev-countdown">0</div>
+                </div>
+            </div>
+            
+            <div style="overflow-x: auto;">
+                <table id="attendance-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Turno</th>
+                            <th>Apellido y Nombre</th>
+                            <th>Ausencias</th>
+                            <th>Tarde</th>
+                            <th>Contrato</th>
+                            <th>Función</th>
+                            <th>F. Ingreso</th>
+                            <th>Días Trab.</th>
+                            <th>Notas</th>
+                            <!-- Days will be generated by JavaScript -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Gestión de Usuarios -->
+        <div class="tab-content" id="users-tab">
+            <div class="controls">
+                <button id="add-user">Agregar Usuario</button>
+            </div>
+            
+            <table id="users-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Turno</th>
+                        <th>Apellido y Nombre</th>
+                        <th>Contrato</th>
+                        <th>Función</th>
+                        <th>F. Ingreso</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Reportes -->
+        <div class="tab-content" id="reports-tab">
+            <div class="controls">
+                <div class="filter-controls">
+                    <select id="report-month">
+                        <option value="0">Enero</option>
+                        <option value="1">Febrero</option>
+                        <option value="2">Marzo</option>
+                        <option value="3">Abril</option>
+                        <option value="4">Mayo</option>
+                        <option value="5">Junio</option>
+                        <option value="6">Julio</option>
+                        <option value="7">Agosto</option>
+                        <option value="8">Septiembre</option>
+                        <option value="9">Octubre</option>
+                        <option value="10">Noviembre</option>
+                        <option value="11">Diciembre</option>
+                    </select>
+                    <select id="report-year">
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                    <select id="report-type">
+                        <option value="attendance">Asistencia por Día</option>
+                        <option value="absences">Ausencias por Empleado</option>
+                        <option value="contract">Resumen por Contrato</option>
+                    </select>
+                </div>
+                <button id="generate-report">Generar Reporte</button>
+                <button id="export-report">Exportar a Excel</button>
+            </div>
+            
+            <div id="report-content">
+                <!-- Report content will be generated by JavaScript -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para agregar/editar usuario -->
+    <div class="modal" id="user-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Agregar Usuario</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            <form id="user-form">
+                <input type="hidden" id="user-id">
+                <div class="form-group">
+                    <label for="user-turn">Turno</label>
+                    <input type="number" id="user-turn" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="user-name">Apellido y Nombre</label>
+                    <input type="text" id="user-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="user-contract">Contrato</label>
+                    <select id="user-contract" required>
+                        <option value="EF">EF</option>
+                        <option value="EV">EV</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="user-function">Función</label>
+                    <select id="user-function" required>
+                        <option value="Supervisor">Supervisor</option>
+                        <option value="Administrativo">Administrativo</option>
+                        <option value="control">Control</option>
+                        <option value="Ventilador">Ventilador</option>
+                        <option value="Acarreador">Acarreador</option>
+                        <option value="Ayudante">Ayudante</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="user-start-date">Fecha de Ingreso</label>
+                    <input type="date" id="user-start-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="user-notes">Notas</label>
+                    <textarea id="user-notes"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="close-modal">Cancelar</button>
+                    <button type="submit" class="success">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal para agregar notas -->
+    <div class="modal" id="notes-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Notas para <span id="notes-user-name"></span></h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="form-group">
+                <label for="notes-content">Notas</label>
+                <textarea id="notes-content"></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="close-modal">Cancelar</button>
+                <button type="button" id="save-notes" class="success">Guardar Notas</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURACIÓN Y CONSTANTES
+        // ============================================
+        const CONFIG = {
+            MESES: [
+                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+            ],
+            ESTADOS_ASISTENCIA: {
+                VACIO: '',
+                PRESENTE: 'P',
+                AUSENTE: 'A',
+                CAMBIO_TURNO: 'CT',
+                CUMPLEANIOS: 'C',
+                RETIRA_ANTES: 'RA'
+            },
+            SECUENCIA_ESTADOS: ['', 'P', 'A', 'CT', 'C', 'RA'],
+            CONTRATOS: {
+                EF: 'EF',
+                EV: 'EV'
+            },
+            FUNCIONES: {
+                SUPERVISOR: 'Supervisor',
+                ADMINISTRATIVO: 'Administrativo',
+                CONTROL: 'control',
+                VENTILADOR: 'Ventilador',
+                ACARREADOR: 'Acarreador',
+                AYUDANTE: 'Ayudante'
+            },
+            EV_MESES_PARA_CONVERSION: 5.5,
+            DIAS_DESCANSO_SEMANA: [0, 6] // Domingo y Sábado
+        };
+
+        // ============================================
+        // VARIABLES GLOBALES
+        // ============================================
+        let employees = [];
+        let currentDate = new Date();
+        let currentMonth = currentDate.getMonth();
+        let currentYear = currentDate.getFullYear();
+        let editingUserId = null;
+        let notesUserId = null;
+
+        // ============================================
+        // INICIALIZACIÓN
+        // ============================================
+        
+        /**
+         * Inicializa la aplicación cuando el DOM está listo
+         */
+        function inicializarAplicacion() {
+            try {
+                initializeApp();
+                setupEventListeners();
+                loadEmployeesFromSampleData();
+                renderAttendanceTable();
+                renderUsersTable();
+                updateStats();
+            } catch (error) {
+                console.error('Error al inicializar la aplicación:', error);
+                alert('Error al cargar la aplicación. Por favor, recarga la página.');
+            }
+        }
+
+        // Inicializar cuando el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', inicializarAplicacion);
+        } else {
+            inicializarAplicacion();
+        }
+
+        function initializeApp() {
+            // Establecer fecha actual
+            document.getElementById('current-date').textContent = formatDate(currentDate);
+            
+            // Configurar selectores de año
+            const yearSelect = document.getElementById('year-select');
+            const reportYearSelect = document.getElementById('report-year');
+            
+            for (let i = currentYear - 5; i <= currentYear + 1; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                yearSelect.appendChild(option);
+                
+                const reportOption = option.cloneNode(true);
+                reportYearSelect.appendChild(reportOption);
+            }
+            
+            yearSelect.value = currentYear;
+            reportYearSelect.value = currentYear;
+            
+            // Configurar selector de mes
+            document.getElementById('month-select').value = currentMonth;
+            document.getElementById('report-month').value = currentMonth;
+        }
+
+        function setupEventListeners() {
+            // Tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    this.classList.add('active');
+                    document.getElementById(this.dataset.tab + '-tab').classList.add('active');
+                });
+            });
+            
+            // Filtros
+            document.getElementById('month-select').addEventListener('change', function() {
+                currentMonth = parseInt(this.value);
+                renderAttendanceTable();
+                updateStats();
+            });
+            
+            document.getElementById('year-select').addEventListener('change', function() {
+                currentYear = parseInt(this.value);
+                renderAttendanceTable();
+                updateStats();
+            });
+            
+            document.getElementById('function-filter').addEventListener('change', renderAttendanceTable);
+            
+            // Botones
+            document.getElementById('save-attendance').addEventListener('click', saveAttendance);
+            document.getElementById('add-user').addEventListener('click', openAddUserModal);
+            document.getElementById('generate-report').addEventListener('click', generateReport);
+            document.getElementById('export-report').addEventListener('click', exportReport);
+            
+            // Modales
+            document.querySelectorAll('.close-modal').forEach(closeBtn => {
+                closeBtn.addEventListener('click', function() {
+                    document.querySelectorAll('.modal').forEach(modal => {
+                        modal.style.display = 'none';
+                    });
+                });
+            });
+            
+            document.getElementById('user-form').addEventListener('submit', saveUser);
+            document.getElementById('save-notes').addEventListener('click', saveNotes);
+            
+            // Cerrar modal al hacer clic fuera
+            window.addEventListener('click', function(event) {
+                document.querySelectorAll('.modal').forEach(modal => {
+                    if (event.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        function loadEmployeesFromSampleData() {
+            // Datos de ejemplo basados en el archivo proporcionado
+            employees = [
+                { id: 1, turn: 1, name: "Zequeira Mariano", absences: 0, late: 0, contract: "EF", function: "Supervisor", startDate: "2023-01-15", notes: "", attendance: {} },
+                { id: 2, turn: 1, name: "Mendoza Victor", absences: 0, late: 0, contract: "EF", function: "Administrativo", startDate: "2023-02-10", notes: "", attendance: {} },
+                { id: 3, turn: 1, name: "Amaranto Paúl", absences: 0, late: 0, contract: "EF", function: "control", startDate: "2023-03-05", notes: "", attendance: {} },
+                { id: 4, turn: 2, name: "Petriello Walter", absences: 0, late: 0, contract: "EF", function: "control", startDate: "2023-01-20", notes: "", attendance: {} },
+                { id: 5, turn: 3, name: "Rodriguez Jonathan", absences: 0, late: 0, contract: "EF", function: "control", startDate: "2023-02-15", notes: "", attendance: {} },
+                { id: 6, turn: 4, name: "Morel Fernando", absences: 0, late: 0, contract: "EF", function: "control", startDate: "2023-03-01", notes: "", attendance: {} },
+                { id: 7, turn: 1, name: "Taboada Hector", absences: 0, late: 0, contract: "EF", function: "Ventilador", startDate: "2023-01-10", notes: "", attendance: {} },
+                { id: 8, turn: 2, name: "Coronel Yoel", absences: 0, late: 0, contract: "EF", function: "Ventilador", startDate: "2023-02-05", notes: "", attendance: {} },
+                { id: 9, turn: 3, name: "Mansueti Claudio", absences: 0, late: 0, contract: "EF", function: "Ventilador", startDate: "2023-03-12", notes: "", attendance: {} },
+                { id: 10, turn: 4, name: "Centurion Gaston", absences: 0, late: 0, contract: "EF", function: "Ventilador", startDate: "2023-01-25", notes: "", attendance: {} },
+                { id: 11, turn: 5, name: "Sanchez Braian", absences: 0, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-04-01", notes: "", attendance: {} },
+                { id: 12, turn: 6, name: "Escalante Ignacio", absences: 0, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-04-10", notes: "", attendance: {} },
+                { id: 13, turn: 7, name: "ARIAS IVAN", absences: 0, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-04-15", notes: "", attendance: {} },
+                { id: 14, turn: 8, name: "SIERRA AGUSTIN", absences: 0, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-05-01", notes: "", attendance: {} },
+                { id: 15, turn: 9, name: "GALARZA ALAN", absences: 0, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-05-10", notes: "", attendance: {} },
+                { id: 16, turn: 10, name: "AGUIRRE NAHUEL", absences: 0, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-05-20", notes: "", attendance: {} },
+                { id: 17, turn: 11, name: "ZURITA JUAN ANDRES", absences: 0, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-06-01", notes: "", attendance: {} },
+                { id: 19, turn: 12, name: "OSES CIRO", absences: 3, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-06-10", notes: "", attendance: {} },
+                { id: 21, turn: 13, name: "MANSILLA NICOLAS", absences: 0, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-06-15", notes: "", attendance: {} },
+                { id: 22, turn: 14, name: "MUÑOZ EZEQUIEL", absences: 1, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-07-01", notes: "", attendance: {} },
+                { id: 23, turn: 15, name: "SANCHEZ EMILIANO", absences: 0, late: 0, contract: "EV", function: "Ventilador", startDate: "2023-07-10", notes: "", attendance: {} },
+                { id: 24, turn: 1, name: "Aguirre Juan", absences: 0, late: 0, contract: "EF", function: "Acarreador", startDate: "2023-01-05", notes: "", attendance: {} },
+                { id: 25, turn: 2, name: "Bordon Enrique", absences: 1, late: 0, contract: "EF", function: "Acarreador", startDate: "2023-02-20", notes: "", attendance: {} },
+                { id: 26, turn: 1, name: "Germiniani Carlos", absences: 0, late: 0, contract: "EF", function: "Ayudante", startDate: "2023-03-10", notes: "", attendance: {} },
+                { id: 27, turn: 2, name: "Zarza Alexis", absences: 0, late: 0, contract: "EF", function: "Ayudante", startDate: "2023-03-25", notes: "", attendance: {} }
+            ];
+            
+            // Simular algunos datos de asistencia
+            employees.forEach(emp => {
+                for (let day = 1; day <= 31; day++) {
+                    const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    if (Math.random() > 0.2) {
+                        emp.attendance[dateKey] = 'P';
+                    } else if (Math.random() > 0.7) {
+                        emp.attendance[dateKey] = 'A';
+                    } else if (Math.random() > 0.8) {
+                        emp.attendance[dateKey] = 'CT';
+                    }
+                }
+            });
+        }
+
+        function renderAttendanceTable() {
+            const tableBody = document.querySelector('#attendance-table tbody');
+            const thead = document.querySelector('#attendance-table thead tr');
+            
+            // Limpiar tabla
+            tableBody.innerHTML = '';
+            
+            // Generar encabezados de días
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            
+            // Eliminar encabezados de días existentes (mantener los primeros 10)
+            while (thead.children.length > 10) {
+                thead.removeChild(thead.lastChild);
+            }
+            
+            // Agregar encabezados de días
+            for (let day = 1; day <= daysInMonth; day++) {
+                const th = document.createElement('th');
+                th.textContent = day;
+                th.className = 'day-header';
+                thead.appendChild(th);
+            }
+            
+            // Filtrar empleados según la función seleccionada
+            const functionFilter = document.getElementById('function-filter').value;
+            const filteredEmployees = functionFilter === 'all' 
+                ? employees 
+                : employees.filter(emp => emp.function === functionFilter);
+            
+            // Renderizar filas de empleados
+            filteredEmployees.forEach(employee => {
+                const row = document.createElement('tr');
+                
+                // Datos básicos
+                row.innerHTML = `
+                    <td>${employee.id}</td>
+                    <td>${employee.turn}</td>
+                    <td>${employee.name}</td>
+                    <td>${employee.absences}</td>
+                    <td>${employee.late}</td>
+                    <td>${employee.contract}</td>
+                    <td>${employee.function}</td>
+                    <td>${formatDate(new Date(employee.startDate))}</td>
+                    <td>${calculateWorkDays(employee)}</td>
+                    <td class="notes-cell" data-user-id="${employee.id}">${employee.notes || ''}</td>
+                `;
+                
+                // Agregar celdas de días
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const status = employee.attendance[dateKey] || '';
+                    
+                    const dayCell = document.createElement('td');
+                    dayCell.className = 'day-cell';
+                    dayCell.dataset.date = dateKey;
+                    dayCell.dataset.userId = employee.id;
+                    
+                    if (status) {
+                        dayCell.className += ` status-${getStatusClass(status)}`;
+                        dayCell.textContent = status;
+                    }
+                    
+                    dayCell.addEventListener('click', function() {
+                        changeAttendanceStatus(this);
+                    });
+                    
+                    row.appendChild(dayCell);
+                }
+                
+                // Agregar contador regresivo para EV
+                if (employee.contract === 'EV') {
+                    const countdown = calculateEVCountdown(employee.startDate);
+                    if (countdown.days > 0) {
+                        const countdownCell = document.createElement('div');
+                        countdownCell.className = 'ev-countdown';
+                        countdownCell.textContent = `${countdown.days}d ${countdown.hours}h`;
+                        row.querySelector('td:nth-child(3)').appendChild(countdownCell);
+                    }
+                }
+                
+                // Agregar evento para editar notas
+                const notesCell = row.querySelector('.notes-cell');
+                notesCell.addEventListener('click', function() {
+                    openNotesModal(employee.id, employee.name);
+                });
+                
+                tableBody.appendChild(row);
+            });
+        }
+
+        function renderUsersTable() {
+            const tableBody = document.querySelector('#users-table tbody');
+            tableBody.innerHTML = '';
+            
+            employees.forEach(employee => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${employee.id}</td>
+                    <td>${employee.turn}</td>
+                    <td>${employee.name}</td>
+                    <td>${employee.contract}</td>
+                    <td>${employee.function}</td>
+                    <td>${formatDate(new Date(employee.startDate))}</td>
+                    <td>
+                        <button class="edit-user" data-id="${employee.id}">Editar</button>
+                        <button class="danger delete-user" data-id="${employee.id}">Eliminar</button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Agregar event listeners para botones de edición y eliminación
+            document.querySelectorAll('.edit-user').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    openEditUserModal(parseInt(this.dataset.id));
+                });
+            });
+            
+            document.querySelectorAll('.delete-user').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    deleteUser(parseInt(this.dataset.id));
+                });
+            });
+        }
+
+        function changeAttendanceStatus(cell) {
+            const status = cell.textContent;
+            const nextStatus = getNextStatus(status);
+            const statusClass = getStatusClass(nextStatus);
+            
+            // Actualizar celda
+            cell.textContent = nextStatus;
+            cell.className = `day-cell status-${statusClass}`;
+            
+            // Actualizar datos en memoria
+            const userId = parseInt(cell.dataset.userId);
+            const date = cell.dataset.date;
+            
+            const employee = employees.find(emp => emp.id === userId);
+            if (employee) {
+                employee.attendance[date] = nextStatus;
+                
+                // Recalcular ausencias basándose en todos los registros
+                employee.absences = Object.values(employee.attendance).filter(s => s === 'A').length;
+                
+                // Actualizar estadísticas
+                updateStats();
+            }
+        }
+
+        /**
+         * Obtiene el siguiente estado en la secuencia de asistencia
+         * @param {string} currentStatus - Estado actual
+         * @returns {string} Siguiente estado
+         */
+        function getNextStatus(currentStatus) {
+            const currentIndex = CONFIG.SECUENCIA_ESTADOS.indexOf(currentStatus);
+            const nextIndex = (currentIndex + 1) % CONFIG.SECUENCIA_ESTADOS.length;
+            return CONFIG.SECUENCIA_ESTADOS[nextIndex];
+        }
+
+        /**
+         * Obtiene la clase CSS correspondiente al estado de asistencia
+         * @param {string} status - Estado de asistencia
+         * @returns {string} Clase CSS
+         */
+        function getStatusClass(status) {
+            const statusMap = {
+                [CONFIG.ESTADOS_ASISTENCIA.PRESENTE]: 'presente',
+                [CONFIG.ESTADOS_ASISTENCIA.AUSENTE]: 'ausente',
+                [CONFIG.ESTADOS_ASISTENCIA.CAMBIO_TURNO]: 'cambio-turno',
+                [CONFIG.ESTADOS_ASISTENCIA.CUMPLEANIOS]: 'cumpleanios',
+                [CONFIG.ESTADOS_ASISTENCIA.RETIRA_ANTES]: 'retira-antes'
+            };
+            return statusMap[status] || '';
+        }
+
+        /**
+         * Calcula los días trabajados de un empleado
+         * @param {Object} employee - Objeto empleado
+         * @returns {number} Número de días trabajados
+         */
+        function calculateWorkDays(employee) {
+            if (!employee) return 0;
+
+            // Contar días con registros de asistencia (presente o cualquier estado)
+            const attendanceDays = Object.keys(employee.attendance || {}).length;
+            
+            // Si hay registros, usar esos; si no, calcular días hábiles desde ingreso
+            if (attendanceDays > 0) {
+                return attendanceDays;
+            }
+            
+            // Cálculo de días hábiles desde la fecha de ingreso hasta hoy
+            try {
+                const startDate = new Date(employee.startDate);
+                if (isNaN(startDate.getTime())) {
+                    return 0;
+                }
+
+                const today = new Date();
+                let workDays = 0;
+                
+                for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+                    // Excluir fines de semana
+                    if (!CONFIG.DIAS_DESCANSO_SEMANA.includes(d.getDay())) {
+                        workDays++;
+                    }
+                }
+                
+                return workDays;
+            } catch (error) {
+                console.error('Error calculando días trabajados:', error);
+                return 0;
+            }
+        }
+
+        /**
+         * Calcula el tiempo restante para la conversión de EV a EF
+         * @param {string} startDate - Fecha de inicio en formato YYYY-MM-DD
+         * @returns {Object} { days: number, hours: number }
+         */
+        function calculateEVCountdown(startDate) {
+            if (!startDate) {
+                return { days: 0, hours: 0 };
+            }
+
+            try {
+                const start = new Date(startDate);
+                if (isNaN(start.getTime())) {
+                    return { days: 0, hours: 0 };
+                }
+
+                const conversionDate = new Date(start);
+                conversionDate.setMonth(conversionDate.getMonth() + Math.floor(CONFIG.EV_MESES_PARA_CONVERSION));
+                conversionDate.setDate(conversionDate.getDate() + Math.round((CONFIG.EV_MESES_PARA_CONVERSION % 1) * 30));
+                
+                const now = new Date();
+                const diffTime = conversionDate - now;
+                
+                if (diffTime <= 0) {
+                    return { days: 0, hours: 0 };
+                }
+                
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                
+                return {
+                    days: Math.max(0, diffDays),
+                    hours: Math.max(0, diffHours)
+                };
+            } catch (error) {
+                console.error('Error calculando countdown EV:', error);
+                return { days: 0, hours: 0 };
+            }
+        }
+
+        function updateStats() {
+            const totalEmployees = employees.length;
+            const presentToday = employees.filter(emp => {
+                const today = new Date();
+                const dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                return emp.attendance[dateKey] === 'P';
+            }).length;
+            
+            const absentToday = employees.filter(emp => {
+                const today = new Date();
+                const dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                return emp.attendance[dateKey] === 'A';
+            }).length;
+            
+            const evCountdown = employees.filter(emp => 
+                emp.contract === 'EV' && calculateEVCountdown(emp.startDate).days > 0
+            ).length;
+            
+            document.getElementById('total-employees').textContent = totalEmployees;
+            document.getElementById('present-today').textContent = presentToday;
+            document.getElementById('absent-today').textContent = absentToday;
+            document.getElementById('ev-countdown').textContent = evCountdown;
+        }
+
+        function openAddUserModal() {
+            editingUserId = null;
+            document.getElementById('modal-title').textContent = 'Agregar Usuario';
+            document.getElementById('user-form').reset();
+            document.getElementById('user-modal').style.display = 'flex';
+        }
+
+        function openEditUserModal(userId) {
+            editingUserId = userId;
+            const employee = employees.find(emp => emp.id === userId);
+            
+            if (employee) {
+                document.getElementById('modal-title').textContent = 'Editar Usuario';
+                document.getElementById('user-id').value = employee.id;
+                document.getElementById('user-turn').value = employee.turn;
+                document.getElementById('user-name').value = employee.name;
+                document.getElementById('user-contract').value = employee.contract;
+                document.getElementById('user-function').value = employee.function;
+                document.getElementById('user-start-date').value = employee.startDate;
+                document.getElementById('user-notes').value = employee.notes || '';
+                
+                document.getElementById('user-modal').style.display = 'flex';
+            }
+        }
+
+        function openNotesModal(userId, userName) {
+            notesUserId = userId;
+            const employee = employees.find(emp => emp.id === userId);
+            
+            if (employee) {
+                document.getElementById('notes-user-name').textContent = userName;
+                document.getElementById('notes-content').value = employee.notes || '';
+                document.getElementById('notes-modal').style.display = 'flex';
+            }
+        }
+
+        /**
+         * Valida los datos del formulario de usuario
+         * @param {Object} userData - Datos del usuario a validar
+         * @returns {Object} { valido: boolean, mensaje: string }
+         */
+        function validarDatosUsuario(userData) {
+            if (!userData.name || userData.name.trim().length < 3) {
+                return { valido: false, mensaje: 'El nombre debe tener al menos 3 caracteres' };
+            }
+
+            if (!userData.turn || userData.turn < 1) {
+                return { valido: false, mensaje: 'El turno debe ser un número mayor a 0' };
+            }
+
+            if (!userData.startDate) {
+                return { valido: false, mensaje: 'Debe seleccionar una fecha de ingreso' };
+            }
+
+            const fechaIngreso = new Date(userData.startDate);
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            
+            if (fechaIngreso > hoy) {
+                return { valido: false, mensaje: 'La fecha de ingreso no puede ser futura' };
+            }
+
+            return { valido: true, mensaje: '' };
+        }
+
+        /**
+         * Guarda o actualiza un usuario
+         * @param {Event} e - Evento del formulario
+         */
+        function saveUser(e) {
+            e.preventDefault();
+            
+            const userData = {
+                turn: parseInt(document.getElementById('user-turn').value),
+                name: document.getElementById('user-name').value.trim(),
+                contract: document.getElementById('user-contract').value,
+                function: document.getElementById('user-function').value,
+                startDate: document.getElementById('user-start-date').value,
+                notes: document.getElementById('user-notes').value.trim(),
+                absences: 0,
+                late: 0,
+                attendance: {}
+            };
+            
+            // Validar datos
+            const validacion = validarDatosUsuario(userData);
+            if (!validacion.valido) {
+                alert(validacion.mensaje);
+                return;
+            }
+            
+            try {
+                if (editingUserId) {
+                    // Editar usuario existente
+                    const index = employees.findIndex(emp => emp.id === editingUserId);
+                    if (index !== -1) {
+                        userData.id = editingUserId;
+                        userData.absences = employees[index].absences;
+                        userData.late = employees[index].late;
+                        userData.attendance = employees[index].attendance;
+                        employees[index] = userData;
+                    } else {
+                        alert('Usuario no encontrado');
+                        return;
+                    }
+                } else {
+                    // Agregar nuevo usuario
+                    const newId = employees.length > 0 ? Math.max(...employees.map(emp => emp.id)) + 1 : 1;
+                    userData.id = newId;
+                    employees.push(userData);
+                }
+                
+                // Cerrar modal y actualizar tablas
+                document.getElementById('user-modal').style.display = 'none';
+                renderAttendanceTable();
+                renderUsersTable();
+                updateStats();
+            } catch (error) {
+                console.error('Error guardando usuario:', error);
+                alert('Error al guardar el usuario. Por favor, intente nuevamente.');
+            }
+        }
+
+        function saveNotes() {
+            const employee = employees.find(emp => emp.id === notesUserId);
+            
+            if (employee) {
+                employee.notes = document.getElementById('notes-content').value;
+                document.getElementById('notes-modal').style.display = 'none';
+                renderAttendanceTable();
+            }
+        }
+
+        /**
+         * Elimina un usuario después de confirmación
+         * @param {number} userId - ID del usuario a eliminar
+         */
+        function deleteUser(userId) {
+            if (!userId) return;
+
+            const employee = employees.find(emp => emp.id === userId);
+            if (!employee) {
+                alert('Usuario no encontrado');
+                return;
+            }
+
+            const confirmacion = confirm(
+                `¿Está seguro de que desea eliminar al usuario "${employee.name}"?\n\nEsta acción no se puede deshacer.`
+            );
+            
+            if (confirmacion) {
+                employees = employees.filter(emp => emp.id !== userId);
+                renderAttendanceTable();
+                renderUsersTable();
+                updateStats();
+            }
+        }
+
+        function saveAttendance() {
+            // En una aplicación real, aquí se enviarían los datos al servidor
+            alert('Presentismo guardado correctamente');
+            // Simular guardado en base de datos
+            localStorage.setItem('attendanceData', JSON.stringify(employees));
+        }
+
+        function generateReport() {
+            const reportType = document.getElementById('report-type').value;
+            const reportMonth = parseInt(document.getElementById('report-month').value);
+            const reportYear = parseInt(document.getElementById('report-year').value);
+            
+            let reportContent = '';
+            
+            switch(reportType) {
+                case 'attendance':
+                    reportContent = generateAttendanceReport(reportMonth, reportYear);
+                    break;
+                case 'absences':
+                    reportContent = generateAbsencesReport(reportMonth, reportYear);
+                    break;
+                case 'contract':
+                    reportContent = generateContractReport(reportMonth, reportYear);
+                    break;
+            }
+            
+            document.getElementById('report-content').innerHTML = reportContent;
+        }
+
+        function generateAttendanceReport(month, year) {
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            let html = `<h3>Asistencia por Día - ${getMonthName(month)} ${year}</h3>`;
+            html += '<table><thead><tr><th>Día</th><th>Presentes</th><th>Ausentes</th><th>Otros</th><th>% Asistencia</th></tr></thead><tbody>';
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                let presents = 0, absents = 0, others = 0;
+                
+                employees.forEach(emp => {
+                    const status = emp.attendance[dateKey];
+                    if (status === 'P') presents++;
+                    else if (status === 'A') absents++;
+                    else if (status) others++;
+                });
+                
+                const total = presents + absents + others;
+                const attendanceRate = total > 0 ? (presents / total * 100).toFixed(1) : 0;
+                
+                html += `<tr>
+                    <td>${day}</td>
+                    <td>${presents}</td>
+                    <td>${absents}</td>
+                    <td>${others}</td>
+                    <td>${attendanceRate}%</td>
+                </tr>`;
+            }
+            
+            html += '</tbody></table>';
+            return html;
+        }
+
+        function generateAbsencesReport(month, year) {
+            let html = `<h3>Ausencias por Empleado - ${getMonthName(month)} ${year}</h3>`;
+            html += '<table><thead><tr><th>Empleado</th><th>Función</th><th>Ausencias</th><th>Días Tarde</th></tr></thead><tbody>';
+            
+            employees.forEach(emp => {
+                html += `<tr>
+                    <td>${emp.name}</td>
+                    <td>${emp.function}</td>
+                    <td>${emp.absences}</td>
+                    <td>${emp.late}</td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            return html;
+        }
+
+        function generateContractReport(month, year) {
+            let html = `<h3>Resumen por Contrato - ${getMonthName(month)} ${year}</h3>`;
+            html += '<table><thead><tr><th>Contrato</th><th>Cantidad</th><th>Ausencias Totales</th><th>Promedio Ausencias</th></tr></thead><tbody>';
+            
+            const contractGroups = {};
+            
+            employees.forEach(emp => {
+                if (!contractGroups[emp.contract]) {
+                    contractGroups[emp.contract] = {
+                        count: 0,
+                        absences: 0
+                    };
+                }
+                
+                contractGroups[emp.contract].count++;
+                contractGroups[emp.contract].absences += emp.absences;
+            });
+            
+            for (const contract in contractGroups) {
+                const group = contractGroups[contract];
+                const avgAbsences = (group.absences / group.count).toFixed(1);
+                
+                html += `<tr>
+                    <td>${contract}</td>
+                    <td>${group.count}</td>
+                    <td>${group.absences}</td>
+                    <td>${avgAbsences}</td>
+                </tr>`;
+            }
+            
+            html += '</tbody></table>';
+            return html;
+        }
+
+        function exportReport() {
+            const reportType = document.getElementById('report-type').value;
+            const reportMonth = parseInt(document.getElementById('report-month').value);
+            const reportYear = parseInt(document.getElementById('report-year').value);
+            
+            let datosExcel = [];
+            let nombreArchivo = '';
+            
+            switch(reportType) {
+                case 'attendance':
+                    datosExcel = generarDatosExcelAsistencia(reportMonth, reportYear);
+                    nombreArchivo = `Asistencia_${getMonthName(reportMonth)}_${reportYear}.xlsx`;
+                    break;
+                case 'absences':
+                    datosExcel = generarDatosExcelAusencias(reportMonth, reportYear);
+                    nombreArchivo = `Ausencias_${getMonthName(reportMonth)}_${reportYear}.xlsx`;
+                    break;
+                case 'contract':
+                    datosExcel = generarDatosExcelContrato(reportMonth, reportYear);
+                    nombreArchivo = `Resumen_Contrato_${getMonthName(reportMonth)}_${reportYear}.xlsx`;
+                    break;
+            }
+            
+            if (datosExcel.length > 0) {
+                const ws = XLSX.utils.aoa_to_sheet(datosExcel);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Reporte");
+                XLSX.writeFile(wb, nombreArchivo);
+            } else {
+                alert('No hay datos para exportar');
+            }
+        }
+        
+        function generarDatosExcelAsistencia(month, year) {
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const datos = [['Día', 'Presentes', 'Ausentes', 'Otros', '% Asistencia']];
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                let presents = 0, absents = 0, others = 0;
+                
+                employees.forEach(emp => {
+                    const status = emp.attendance[dateKey];
+                    if (status === 'P') presents++;
+                    else if (status === 'A') absents++;
+                    else if (status) others++;
+                });
+                
+                const total = presents + absents + others;
+                const attendanceRate = total > 0 ? (presents / total * 100).toFixed(1) : 0;
+                
+                datos.push([day, presents, absents, others, attendanceRate + '%']);
+            }
+            
+            return datos;
+        }
+        
+        function generarDatosExcelAusencias(month, year) {
+            const datos = [['Empleado', 'Turno', 'Función', 'Contrato', 'Ausencias', 'Días Tarde']];
+            
+            employees.forEach(emp => {
+                datos.push([
+                    emp.name,
+                    emp.turn,
+                    emp.function,
+                    emp.contract,
+                    emp.absences,
+                    emp.late
+                ]);
+            });
+            
+            return datos;
+        }
+        
+        function generarDatosExcelContrato(month, year) {
+            const datos = [['Contrato', 'Cantidad', 'Ausencias Totales', 'Promedio Ausencias']];
+            const contractGroups = {};
+            
+            employees.forEach(emp => {
+                if (!contractGroups[emp.contract]) {
+                    contractGroups[emp.contract] = {
+                        count: 0,
+                        absences: 0
+                    };
+                }
+                
+                contractGroups[emp.contract].count++;
+                contractGroups[emp.contract].absences += emp.absences;
+            });
+            
+            for (const contract in contractGroups) {
+                const group = contractGroups[contract];
+                const avgAbsences = (group.absences / group.count).toFixed(1);
+                
+                datos.push([
+                    contract,
+                    group.count,
+                    group.absences,
+                    avgAbsences
+                ]);
+            }
+            
+            return datos;
+        }
+
+        // Funciones auxiliares
+        function formatDate(date) {
+            return date.toLocaleDateString('es-ES');
+        }
+
+        /**
+         * Obtiene el nombre del mes en español
+         * @param {number} month - Índice del mes (0-11)
+         * @returns {string} Nombre del mes
+         */
+        function getMonthName(month) {
+            if (month < 0 || month > 11) {
+                return CONFIG.MESES[0];
+            }
+            return CONFIG.MESES[month];
+        }
+
+        /**
+         * Toggle del menú de navegación
+         */
+        function toggleNav() {
+            const dropdown = document.getElementById('navDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        // Cerrar menú al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            const navMenu = document.querySelector('.nav-menu');
+            const dropdown = document.getElementById('navDropdown');
+            if (!navMenu.contains(e.target) && dropdown.classList.contains('active')) {
+                dropdown.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>

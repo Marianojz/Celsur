@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo de Ventilación - Sistema Integral de Jefatura</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --gray: #95a5a6;
+            --dark-gray: #34495e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            overflow: hidden;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-button:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateX(-5px);
+        }
+
+        .modules-container {
+            padding: 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+        }
+
+        .module-card {
+            background: white;
+            border-radius: 15px;
+            padding: 35px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .module-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            border-color: var(--secondary);
+        }
+
+        .module-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .module-icon {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.8em;
+            color: white;
+            margin: 0 auto 25px;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .module-card:nth-child(1) .module-icon {
+            background: linear-gradient(135deg, #27ae60, #229954);
+        }
+
+        .module-card:nth-child(2) .module-icon {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+
+        .module-title {
+            font-size: 2em;
+            color: var(--primary);
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .module-description {
+            color: var(--gray);
+            text-align: center;
+            margin-bottom: 25px;
+            line-height: 1.7;
+            font-size: 1.05em;
+        }
+
+        .module-features {
+            list-style: none;
+            margin-bottom: 25px;
+            padding: 0;
+        }
+
+        .module-features li {
+            padding: 8px 0;
+            color: var(--dark-gray);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .module-features li i {
+            color: var(--success);
+            font-size: 0.9em;
+        }
+
+        .module-button {
+            width: 100%;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .module-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .module-button:active {
+            transform: translateY(0);
+        }
+
+        .footer {
+            background: var(--light);
+            padding: 20px;
+            text-align: center;
+            color: var(--dark);
+            font-size: 0.9em;
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 1.2em;
+        }
+
+        /* Menú de navegación */
+        .nav-menu {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .nav-toggle {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .nav-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .nav-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 10px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            min-width: 250px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .nav-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--primary);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .nav-item:last-child {
+            border-bottom: none;
+        }
+
+        .nav-item:hover {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .nav-item i {
+            font-size: 1.2em;
+            width: 25px;
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .nav-menu {
+                top: 10px;
+                right: 10px;
+            }
+
+            .nav-toggle {
+                padding: 10px 15px;
+                font-size: 0.9em;
+            }
+
+            .nav-dropdown {
+                min-width: 200px;
+            }
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .back-button {
+                position: static;
+                margin-bottom: 20px;
+                width: 100%;
+                justify-content: center;
+            }
+
+            .modules-container {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+
+            .module-card {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-button" onclick="volverInicio()">
+                <i class="fas fa-arrow-left"></i> Volver al Inicio
+            </button>
+            <div class="header-content">
+                <h1><i class="fas fa-wind"></i> Módulo de Ventilación</h1>
+                <p>Gestión y Control Operacional</p>
+            </div>
+        </div>
+
+        <div class="modules-container">
+            <!-- Submódulo 1: Producción -->
+            <div class="module-card" data-module="produccion">
+                <div class="module-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="module-title">Producción</div>
+                <div class="module-description">
+                    Análisis de rendimiento y productividad operacional. 
+                    Control de tiempo muerto, eficiencia y proyecciones de productividad.
+                </div>
+                <ul class="module-features">
+                    <li><i class="fas fa-check-circle"></i> Análisis de tiempo muerto</li>
+                    <li><i class="fas fa-check-circle"></i> Eficiencia por usuario</li>
+                    <li><i class="fas fa-check-circle"></i> Proyecciones de productividad</li>
+                    <li><i class="fas fa-check-circle"></i> Reportes y gráficos</li>
+                </ul>
+                <button class="module-button" onclick="abrirSubmodulo('produccion')">
+                    <i class="fas fa-arrow-right"></i> Acceder a Producción
+                </button>
+            </div>
+
+            <!-- Submódulo 2: Presentismo -->
+            <div class="module-card" data-module="presentismo">
+                <div class="module-icon">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div class="module-title">Presentismo</div>
+                <div class="module-description">
+                    Sistema de control de asistencia y presentismo del personal. 
+                    Gestión de usuarios, registro de asistencia y reportes.
+                </div>
+                <ul class="module-features">
+                    <li><i class="fas fa-check-circle"></i> Control de asistencia diaria</li>
+                    <li><i class="fas fa-check-circle"></i> Gestión de usuarios</li>
+                    <li><i class="fas fa-check-circle"></i> Reportes de ausencias</li>
+                    <li><i class="fas fa-check-circle"></i> Exportación a Excel</li>
+                </ul>
+                <button class="module-button" onclick="abrirSubmodulo('presentismo')">
+                    <i class="fas fa-arrow-right"></i> Acceder a Presentismo
+                </button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><i class="fas fa-code"></i> Módulo de Ventilación | Sistema Integral de Jefatura | Celsur</p>
+        </div>
+    </div>
+
+    <!-- Menú de navegación -->
+    <div class="nav-menu">
+        <div class="nav-toggle" onclick="toggleNav()">
+            <i class="fas fa-bars"></i>
+            <span>Menú</span>
+        </div>
+        <div class="nav-dropdown" id="navDropdown">
+            <a href="index.html" class="nav-item">
+                <i class="fas fa-home"></i>
+                <span>Inicio</span>
+            </a>
+            <a href="ventilacion.html" class="nav-item active">
+                <i class="fas fa-wind"></i>
+                <span>Ventilación</span>
+            </a>
+            <a href="produccion.html" class="nav-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Producción</span>
+            </a>
+            <a href="presentismo.html" class="nav-item">
+                <i class="fas fa-user-check"></i>
+                <span>Presentismo</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Cargando submódulo...</div>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURACIÓN
+        // ============================================
+        const CONFIG = {
+            SUBMODULOS: {
+            produccion: {
+                nombre: 'Producción',
+                archivo: 'produccion.html',
+                disponible: true
+            },
+            presentismo: {
+                nombre: 'Presentismo',
+                archivo: 'presentismo.html',
+                disponible: true
+            }
+            }
+        };
+
+        // ============================================
+        // FUNCIONES DE UTILIDAD
+        // ============================================
+
+        /**
+         * Muestra el overlay de carga
+         */
+        function mostrarCarga() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.classList.add('active');
+            }
+        }
+
+        /**
+         * Oculta el overlay de carga
+         */
+        function ocultarCarga() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.classList.remove('active');
+            }
+        }
+
+        /**
+         * Abre un submódulo específico
+         * @param {string} submoduloId - ID del submódulo a abrir
+         */
+        function abrirSubmodulo(submoduloId) {
+            const submodulo = CONFIG.SUBMODULOS[submoduloId];
+            
+            if (!submodulo) {
+                alert('Submódulo no encontrado');
+                return;
+            }
+
+            if (!submodulo.disponible || !submodulo.archivo) {
+                alert(`El submódulo "${submodulo.nombre}" no está disponible.`);
+                return;
+            }
+
+            // Mostrar carga
+            mostrarCarga();
+
+            // Abrir el submódulo
+            setTimeout(() => {
+                window.location.href = submodulo.archivo;
+            }, 300);
+        }
+
+        /**
+         * Vuelve a la página principal
+         */
+        function volverInicio() {
+            window.location.href = 'index.html';
+        }
+
+        /**
+         * Inicializa la aplicación
+         */
+        function inicializar() {
+            // Agregar efectos de hover mejorados
+            document.querySelectorAll('.module-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('module-button')) return;
+                    const moduloId = this.dataset.module;
+                    if (moduloId) {
+                        abrirSubmodulo(moduloId);
+                    }
+                });
+            });
+
+            // Animación de entrada para las tarjetas
+            const cards = document.querySelectorAll('.module-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 150);
+            });
+        }
+
+        // Inicializar cuando el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', inicializar);
+        } else {
+            inicializar();
+        }
+
+        // Manejar teclas de acceso rápido
+        document.addEventListener('keydown', function(e) {
+            // Ctrl + 1 para Producción, Ctrl + 2 para Presentismo
+            if (e.ctrlKey) {
+                if (e.key === '1') {
+                    e.preventDefault();
+                    abrirSubmodulo('produccion');
+                } else if (e.key === '2') {
+                    e.preventDefault();
+                    abrirSubmodulo('presentismo');
+                }
+            }
+            // ESC para volver al inicio
+            if (e.key === 'Escape') {
+                volverInicio();
+            }
+        });
+
+        /**
+         * Toggle del menú de navegación
+         */
+        function toggleNav() {
+            const dropdown = document.getElementById('navDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        // Cerrar menú al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            const navMenu = document.querySelector('.nav-menu');
+            const dropdown = document.getElementById('navDropdown');
+            if (!navMenu.contains(e.target) && dropdown.classList.contains('active')) {
+                dropdown.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
+
