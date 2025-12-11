@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Control de Presentismo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="google-sheets-integration.js"></script>
     <style>
         :root {
             --primary-color: #2c3e50;
@@ -470,6 +472,10 @@
                 <i class="fas fa-chart-line"></i>
                 <span>Rendimiento</span>
             </a>
+            <a href="proyecciones.html" class="nav-item">
+                <i class="fas fa-crystal-ball"></i>
+                <span>Proyecciones</span>
+            </a>
             <a href="presentismo.html" class="nav-item active">
                 <i class="fas fa-user-check"></i>
                 <span>Presentismo</span>
@@ -495,6 +501,12 @@
         <div class="tab-content active" id="attendance-tab">
             <div class="controls">
                 <div class="filter-controls">
+                    <button id="sync-google-sheets" title="Sincronizar con Google Sheets" style="background: var(--success-color);">
+                        <i class="fas fa-sync-alt"></i> Sincronizar
+                    </button>
+                    <button id="config-google-sheets" title="Configurar Google Sheets" style="background: var(--warning-color);">
+                        <i class="fas fa-cog"></i> Config
+                    </button>
                     <select id="month-select">
                         <option value="0">Enero</option>
                         <option value="1">Febrero</option>
@@ -733,6 +745,15 @@
         };
 
         // ============================================
+        // CONFIGURACIÓN DE GOOGLE SHEETS
+        // ============================================
+        // IMPORTANTE: Reemplaza esta URL con la URL de tu Web App de Google Apps Script
+        // Para obtenerla: Apps Script > Desplegar > Nueva implementación > Copiar URL
+        const GOOGLE_SHEETS_WEB_APP_URL = localStorage.getItem('google_sheets_web_app_url') || '';
+        let googleSheets = null;
+        let useGoogleSheets = false;
+
+        // ============================================
         // VARIABLES GLOBALES
         // ============================================
         let employees = [];
@@ -741,6 +762,7 @@
         let currentYear = currentDate.getFullYear();
         let editingUserId = null;
         let notesUserId = null;
+        let isLoading = false;
 
         // ============================================
         // INICIALIZACIÓN
@@ -749,17 +771,80 @@
         /**
          * Inicializa la aplicación cuando el DOM está listo
          */
-        function inicializarAplicacion() {
+        async function inicializarAplicacion() {
             try {
                 initializeApp();
                 setupEventListeners();
-                loadEmployeesFromSampleData();
+                await initializeGoogleSheets();
+                await loadEmployees();
                 renderAttendanceTable();
                 renderUsersTable();
                 updateStats();
             } catch (error) {
                 console.error('Error al inicializar la aplicación:', error);
                 alert('Error al cargar la aplicación. Por favor, recarga la página.');
+            }
+        }
+
+        /**
+         * Inicializa la conexión con Google Sheets
+         */
+        async function initializeGoogleSheets() {
+            if (GOOGLE_SHEETS_WEB_APP_URL) {
+                try {
+                    googleSheets = new GoogleSheetsIntegration(GOOGLE_SHEETS_WEB_APP_URL);
+                    const isConnected = await googleSheets.testConnection();
+                    
+                    if (isConnected) {
+                        useGoogleSheets = true;
+                        console.log('✅ Conectado a Google Sheets');
+                        showNotification('Conectado a Google Sheets', 'success');
+                    } else {
+                        console.warn('⚠️ No se pudo conectar a Google Sheets, usando modo local');
+                        useGoogleSheets = false;
+                        showNotification('Modo local activado (sin Google Sheets)', 'warning');
+                    }
+                } catch (error) {
+                    console.error('Error inicializando Google Sheets:', error);
+                    useGoogleSheets = false;
+                    showNotification('Error de conexión. Usando modo local.', 'error');
+                }
+            } else {
+                console.log('ℹ️ URL de Google Sheets no configurada, usando modo local');
+                useGoogleSheets = false;
+            }
+        }
+
+        /**
+         * Carga empleados desde Google Sheets o localStorage
+         */
+        async function loadEmployees() {
+            if (isLoading) return;
+            isLoading = true;
+
+            try {
+                if (useGoogleSheets && googleSheets) {
+                    employees = await googleSheets.getEmployees();
+                    console.log(`✅ Cargados ${employees.length} empleados desde Google Sheets`);
+                } else {
+                    // Intentar cargar desde localStorage
+                    const savedData = localStorage.getItem('presentismo_ventilacion_employees');
+                    if (savedData) {
+                        employees = JSON.parse(savedData);
+                        console.log(`✅ Cargados ${employees.length} empleados desde localStorage`);
+                    } else {
+                        // Cargar datos de ejemplo
+                        loadEmployeesFromSampleData();
+                        console.log(`✅ Cargados ${employees.length} empleados de ejemplo`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error cargando empleados:', error);
+                // Fallback a datos de ejemplo
+                loadEmployeesFromSampleData();
+                showNotification('Error cargando datos. Usando datos locales.', 'error');
+            } finally {
+                isLoading = false;
             }
         }
 
@@ -828,6 +913,8 @@
             document.getElementById('add-user').addEventListener('click', openAddUserModal);
             document.getElementById('generate-report').addEventListener('click', generateReport);
             document.getElementById('export-report').addEventListener('click', exportReport);
+            document.getElementById('sync-google-sheets').addEventListener('click', syncWithGoogleSheets);
+            document.getElementById('config-google-sheets').addEventListener('click', openGoogleSheetsConfig);
             
             // Modales
             document.querySelectorAll('.close-modal').forEach(closeBtn => {
@@ -1022,7 +1109,7 @@
             });
         }
 
-        function changeAttendanceStatus(cell) {
+        async function changeAttendanceStatus(cell) {
             const status = cell.textContent;
             const nextStatus = getNextStatus(status);
             const statusClass = getStatusClass(nextStatus);
@@ -1041,6 +1128,18 @@
                 
                 // Recalcular ausencias basándose en todos los registros
                 employee.absences = Object.values(employee.attendance).filter(s => s === 'A').length;
+                
+                // Guardar en Google Sheets si está disponible
+                if (useGoogleSheets && googleSheets) {
+                    try {
+                        await googleSheets.updateAttendance(userId, date, nextStatus);
+                        // También actualizar el empleado para sincronizar ausencias
+                        await googleSheets.saveEmployee(employee);
+                    } catch (error) {
+                        console.error('Error guardando asistencia en Google Sheets:', error);
+                        showNotification('Error guardando en Google Sheets. Los datos están en memoria local.', 'warning');
+                    }
+                }
                 
                 // Actualizar estadísticas
                 updateStats();
@@ -1247,7 +1346,7 @@
          * Guarda o actualiza un usuario
          * @param {Event} e - Evento del formulario
          */
-        function saveUser(e) {
+        async function saveUser(e) {
             e.preventDefault();
             
             const userData = {
@@ -1290,6 +1389,20 @@
                     employees.push(userData);
                 }
                 
+                // Guardar en Google Sheets si está disponible
+                if (useGoogleSheets && googleSheets) {
+                    try {
+                        await googleSheets.saveEmployee(userData);
+                        showNotification('✅ Usuario guardado en Google Sheets', 'success');
+                    } catch (error) {
+                        console.error('Error guardando usuario en Google Sheets:', error);
+                        showNotification('Error guardando en Google Sheets. Datos en memoria local.', 'warning');
+                    }
+                } else {
+                    // Guardar en localStorage
+                    localStorage.setItem('presentismo_ventilacion_employees', JSON.stringify(employees));
+                }
+                
                 // Cerrar modal y actualizar tablas
                 document.getElementById('user-modal').style.display = 'none';
                 renderAttendanceTable();
@@ -1315,7 +1428,7 @@
          * Elimina un usuario después de confirmación
          * @param {number} userId - ID del usuario a eliminar
          */
-        function deleteUser(userId) {
+        async function deleteUser(userId) {
             if (!userId) return;
 
             const employee = employees.find(emp => emp.id === userId);
@@ -1329,18 +1442,78 @@
             );
             
             if (confirmacion) {
-                employees = employees.filter(emp => emp.id !== userId);
-                renderAttendanceTable();
-                renderUsersTable();
-                updateStats();
+                try {
+                    // Eliminar de Google Sheets si está disponible
+                    if (useGoogleSheets && googleSheets) {
+                        await googleSheets.deleteEmployee(userId);
+                        showNotification('✅ Usuario eliminado de Google Sheets', 'success');
+                    }
+                    
+                    // Eliminar de memoria local
+                    employees = employees.filter(emp => emp.id !== userId);
+                    
+                    // Guardar en localStorage
+                    localStorage.setItem('presentismo_ventilacion_employees', JSON.stringify(employees));
+                    
+                    renderAttendanceTable();
+                    renderUsersTable();
+                    updateStats();
+                } catch (error) {
+                    console.error('Error eliminando usuario:', error);
+                    alert('Error al eliminar el usuario. Por favor, intente nuevamente.');
+                }
             }
         }
 
-        function saveAttendance() {
-            // En una aplicación real, aquí se enviarían los datos al servidor
-            alert('Presentismo guardado correctamente');
-            // Simular guardado en base de datos
-            localStorage.setItem('attendanceData', JSON.stringify(employees));
+        async function saveAttendance() {
+            if (isLoading) {
+                showNotification('Ya se está guardando, por favor espera...', 'warning');
+                return;
+            }
+
+            isLoading = true;
+            showNotification('Guardando presentismo...', 'info');
+
+            try {
+                if (useGoogleSheets && googleSheets) {
+                    // Guardar en Google Sheets
+                    let saved = 0;
+                    let errors = 0;
+
+                    for (const employee of employees) {
+                        try {
+                            // Guardar empleado
+                            await googleSheets.saveEmployee(employee);
+                            
+                            // Guardar asistencia
+                            for (const [date, status] of Object.entries(employee.attendance)) {
+                                if (status) {
+                                    await googleSheets.updateAttendance(employee.id, date, status);
+                                }
+                            }
+                            saved++;
+                        } catch (error) {
+                            console.error(`Error guardando empleado ${employee.id}:`, error);
+                            errors++;
+                        }
+                    }
+
+                    if (errors === 0) {
+                        showNotification(`✅ Presentismo guardado correctamente (${saved} empleados)`, 'success');
+                    } else {
+                        showNotification(`⚠️ Guardado parcial: ${saved} guardados, ${errors} con errores`, 'warning');
+                    }
+                } else {
+                    // Guardar en localStorage
+                    localStorage.setItem('presentismo_ventilacion_employees', JSON.stringify(employees));
+                    showNotification('✅ Presentismo guardado localmente', 'success');
+                }
+            } catch (error) {
+                console.error('Error guardando presentismo:', error);
+                showNotification('❌ Error al guardar presentismo', 'error');
+            } finally {
+                isLoading = false;
+            }
         }
 
         function generateReport() {
@@ -1568,6 +1741,96 @@
                 return CONFIG.MESES[0];
             }
             return CONFIG.MESES[month];
+        }
+
+        /**
+         * Sincroniza datos con Google Sheets
+         */
+        async function syncWithGoogleSheets() {
+            if (!useGoogleSheets || !googleSheets) {
+                showNotification('Google Sheets no está configurado', 'warning');
+                return;
+            }
+
+            showNotification('Sincronizando con Google Sheets...', 'info');
+            
+            try {
+                await loadEmployees();
+                renderAttendanceTable();
+                renderUsersTable();
+                updateStats();
+                showNotification('✅ Sincronización completada', 'success');
+            } catch (error) {
+                console.error('Error sincronizando:', error);
+                showNotification('❌ Error en la sincronización', 'error');
+            }
+        }
+
+        /**
+         * Abre el modal de configuración de Google Sheets
+         */
+        function openGoogleSheetsConfig() {
+            const url = prompt(
+                'Ingresa la URL de tu Web App de Google Apps Script:\n\n' +
+                'Para obtenerla:\n' +
+                '1. Abre tu Google Sheet\n' +
+                '2. Ve a Extensiones > Apps Script\n' +
+                '3. Despliega > Nueva implementación\n' +
+                '4. Copia la URL de la implementación',
+                GOOGLE_SHEETS_WEB_APP_URL || ''
+            );
+
+            if (url && url.trim()) {
+                localStorage.setItem('google_sheets_web_app_url', url.trim());
+                location.reload(); // Recargar para aplicar cambios
+            }
+        }
+
+        /**
+         * Muestra una notificación al usuario
+         */
+        function showNotification(message, type = 'info') {
+            // Crear elemento de notificación si no existe
+            let notification = document.getElementById('notification');
+            if (!notification) {
+                notification = document.createElement('div');
+                notification.id = 'notification';
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    padding: 15px 25px;
+                    border-radius: 5px;
+                    color: white;
+                    font-weight: 600;
+                    z-index: 10000;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                    transition: all 0.3s ease;
+                `;
+                document.body.appendChild(notification);
+            }
+
+            // Colores según tipo
+            const colors = {
+                success: '#27ae60',
+                error: '#e74c3c',
+                warning: '#f39c12',
+                info: '#3498db'
+            };
+
+            notification.style.backgroundColor = colors[type] || colors.info;
+            notification.textContent = message;
+            notification.style.display = 'block';
+            notification.style.opacity = '1';
+
+            // Ocultar después de 3 segundos
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 300);
+            }, 3000);
         }
 
         /**

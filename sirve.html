@@ -1087,7 +1087,7 @@
                 return 'Pl Completo';
             }
             
-            return 'General';
+            return 'AL2';
         }
 
         // Función para obtener familias principales de usuario
@@ -1228,6 +1228,151 @@
                 </tbody>
             </table>
             `;
+            
+            // Sección: Usuarios con peor rendimiento (Top 10 con más veces +10min)
+            const usuariosPeorRendimiento = Object.entries(usuarios)
+                .filter(([nombre, datos]) => datos.tiempoMuerto10min.veces > 0)
+                .map(([nombre, datos]) => ({
+                    nombre,
+                    veces10min: datos.tiempoMuerto10min.veces,
+                    total10min: datos.tiempoMuerto10min.total,
+                    promedio10min: datos.tiempoMuerto10min.promedio,
+                    veces5min: datos.tiempoMuerto5min.veces,
+                    total5min: datos.tiempoMuerto5min.total,
+                    veces3min: datos.tiempoMuerto3min.veces,
+                    total3min: datos.tiempoMuerto3min.total,
+                    totalParadas: datos.totalParadas,
+                    totalBultos: datos.totalBultos,
+                    eficiencia: parseFloat(datos.eficienciaParadasMinuto),
+                    tiempoTotalTrabajo: datos.tiempoTotalTrabajo,
+                    primeraTransaccion: datos.primeraTransaccion,
+                    ultimaTransaccion: datos.ultimaTransaccion,
+                    familias: datos.familias
+                }))
+                .sort((a, b) => b.veces10min - a.veces10min)
+                .slice(0, 10);
+            
+            if (usuariosPeorRendimiento.length > 0) {
+                // Calcular máximos para semaforización
+                const maxVeces10min = Math.max(...usuariosPeorRendimiento.map(u => u.veces10min));
+                const maxTotal10min = Math.max(...usuariosPeorRendimiento.map(u => u.total10min));
+                const maxEficiencia = Math.max(...usuariosPeorRendimiento.map(u => u.eficiencia));
+                const minEficiencia = Math.min(...usuariosPeorRendimiento.map(u => u.eficiencia));
+                
+                html += `
+                <div style="margin: 30px 15px 15px 15px;">
+                    <h3 style="color: var(--accent); margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-exclamation-triangle"></i> Usuarios con Peor Rendimiento
+                        <span style="font-size: 0.7em; color: var(--gray); font-weight: normal;">(Top 10 con más paradas +10min)</span>
+                    </h3>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; margin: 0 15px 30px 15px;">
+            `;
+                
+                usuariosPeorRendimiento.forEach((usuario, index) => {
+                    // Semaforización basada en múltiples factores
+                    const ratioVeces = maxVeces10min > 0 ? usuario.veces10min / maxVeces10min : 0;
+                    const ratioTiempo = maxTotal10min > 0 ? usuario.total10min / maxTotal10min : 0;
+                    const ratioEficiencia = maxEficiencia > minEficiencia ? 
+                        (usuario.eficiencia - minEficiencia) / (maxEficiencia - minEficiencia) : 0;
+                    
+                    // Calcular score de rendimiento (más alto = peor)
+                    const scoreRendimiento = (ratioVeces * 0.5) + (ratioTiempo * 0.3) + ((1 - ratioEficiencia) * 0.2);
+                    
+                    // Determinar color de semáforo
+                    let colorFondo, colorBorde, icono;
+                    if (scoreRendimiento >= 0.7) {
+                        colorFondo = 'linear-gradient(135deg, #ffebee, #ffcdd2)';
+                        colorBorde = '#e74c3c';
+                        icono = 'fas fa-exclamation-circle';
+                    } else if (scoreRendimiento >= 0.4) {
+                        colorFondo = 'linear-gradient(135deg, #fff3e0, #ffe0b2)';
+                        colorBorde = '#f39c12';
+                        icono = 'fas fa-exclamation-triangle';
+                    } else {
+                        colorFondo = 'linear-gradient(135deg, #f1f8e9, #dcedc8)';
+                        colorBorde = '#27ae60';
+                        icono = 'fas fa-info-circle';
+                    }
+                    
+                    const horario = `${usuario.primeraTransaccion.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})} - ${usuario.ultimaTransaccion.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})}`;
+                    const familiasUsuario = obtenerFamiliasUsuario(usuario.familias, usuario.totalParadas);
+                    
+                    // Calcular porcentajes para gráfico de barras
+                    const porcentaje10min = (usuario.total10min / usuario.tiempoTotalTrabajo * 100).toFixed(1);
+                    const porcentaje5min = (usuario.total5min / usuario.tiempoTotalTrabajo * 100).toFixed(1);
+                    const porcentaje3min = (usuario.total3min / usuario.tiempoTotalTrabajo * 100).toFixed(1);
+                    const porcentajeActivo = Math.max(0, 100 - parseFloat(porcentaje10min) - parseFloat(porcentaje5min) - parseFloat(porcentaje3min)).toFixed(1);
+                    
+                    html += `
+                    <div style="background: ${colorFondo}; border-left: 4px solid ${colorBorde}; border-radius: 8px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="${icono}" style="color: ${colorBorde}; font-size: 1.2em;"></i>
+                                <h4 style="margin: 0; color: var(--primary); font-size: 1.1em;">${usuario.nombre}</h4>
+                            </div>
+                            <span style="background: ${colorBorde}; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85em; font-weight: bold;">#${index + 1}</span>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; font-size: 0.9em;">
+                            <div>
+                                <div style="color: var(--gray); font-size: 0.85em; margin-bottom: 2px;">Paradas</div>
+                                <div style="font-weight: bold; color: var(--primary);">${usuario.totalParadas}</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--gray); font-size: 0.85em; margin-bottom: 2px;">Bultos</div>
+                                <div style="font-weight: bold; color: var(--primary);">${usuario.totalBultos}</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--gray); font-size: 0.85em; margin-bottom: 2px;">Eficiencia</div>
+                                <div style="font-weight: bold; color: ${usuario.eficiencia < 0.5 ? '#e74c3c' : usuario.eficiencia < 1 ? '#f39c12' : '#27ae60'};">${usuario.eficiencia} par/min</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--gray); font-size: 0.85em; margin-bottom: 2px;">Horario</div>
+                                <div style="font-weight: bold; color: var(--primary); font-size: 0.85em;">${horario}</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 12px; padding: 10px; background: white; border-radius: 6px;">
+                            <div style="font-size: 0.85em; color: var(--gray); margin-bottom: 8px; font-weight: 600;">Distribución de Tiempo</div>
+                            <div style="display: flex; gap: 2px; height: 20px; border-radius: 4px; overflow: hidden;">
+                                <div style="background: #27ae60; flex: ${porcentajeActivo};" title="Tiempo Activo: ${porcentajeActivo}%"></div>
+                                <div style="background: #f39c12; flex: ${porcentaje3min};" title="+3min: ${porcentaje3min}%"></div>
+                                <div style="background: #e67e22; flex: ${porcentaje5min};" title="+5min: ${porcentaje5min}%"></div>
+                                <div style="background: #e74c3c; flex: ${porcentaje10min};" title="+10min: ${porcentaje10min}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 0.85em;">
+                            <div style="text-align: center; padding: 8px; background: rgba(255,255,255,0.6); border-radius: 6px;">
+                                <div style="color: #e74c3c; font-weight: bold; font-size: 1.1em;">${usuario.veces10min}</div>
+                                <div style="color: var(--gray); font-size: 0.85em;">+10min veces</div>
+                                <div style="color: var(--gray); font-size: 0.75em; margin-top: 2px;">${formatearTiempo(usuario.total10min)}</div>
+                            </div>
+                            <div style="text-align: center; padding: 8px; background: rgba(255,255,255,0.6); border-radius: 6px;">
+                                <div style="color: #e67e22; font-weight: bold; font-size: 1.1em;">${usuario.veces5min}</div>
+                                <div style="color: var(--gray); font-size: 0.85em;">+5min veces</div>
+                                <div style="color: var(--gray); font-size: 0.75em; margin-top: 2px;">${formatearTiempo(usuario.total5min)}</div>
+                            </div>
+                            <div style="text-align: center; padding: 8px; background: rgba(255,255,255,0.6); border-radius: 6px;">
+                                <div style="color: #f39c12; font-weight: bold; font-size: 1.1em;">${usuario.veces3min}</div>
+                                <div style="color: var(--gray); font-size: 0.85em;">+3min veces</div>
+                                <div style="color: var(--gray); font-size: 0.75em; margin-top: 2px;">${formatearTiempo(usuario.total3min)}</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1);">
+                            <div style="font-size: 0.8em; color: var(--gray);">
+                                <div><strong>Familias:</strong> ${familiasUsuario || 'N/A'}</div>
+                                <div style="margin-top: 4px;"><strong>Promedio +10min:</strong> ${formatearTiempo(usuario.promedio10min)}</div>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                });
+                
+                html += `</div>`;
+            }
             
             DOM.resultadoDiv.innerHTML = html;
         }
@@ -1513,18 +1658,22 @@
                 }
             });
             
-            // Gráfico 6: Top 10 Paradas
-            const paradasSorted = Object.entries(paradas)
-                .sort((a, b) => b[1] - a[1])
+            // Gráfico 6: Top 10 Paradas por Usuario
+            const top10UsuariosParadas = Object.entries(usuarios)
+                .map(([nombre, datos]) => ({
+                    nombre,
+                    paradas: datos.totalParadas
+                }))
+                .sort((a, b) => b.paradas - a.paradas)
                 .slice(0, 10);
             
             const ctxTopParadas = document.getElementById('topParadasChart').getContext('2d');
             charts.topParadas = new Chart(ctxTopParadas, {
                 type: 'doughnut',
                 data: {
-                    labels: paradasSorted.map(p => p[0]),
+                    labels: top10UsuariosParadas.map(u => u.nombre),
                     datasets: [{
-                        data: paradasSorted.map(p => p[1]),
+                        data: top10UsuariosParadas.map(u => u.paradas),
                         backgroundColor: [
                             '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
                             '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'

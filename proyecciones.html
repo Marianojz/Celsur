@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proyecciones Predictivas - Celsur</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="auth.js"></script>
+    <script src="proyecciones.js"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --gray: #95a5a6;
+            --dark-gray: #34495e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            overflow: hidden;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-refresh {
+            background: linear-gradient(135deg, var(--success), #2ecc71);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, var(--warning), #e67e22);
+        }
+
+        .projection-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .projection-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-left: 5px solid var(--secondary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .projection-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .projection-card.green {
+            border-left-color: var(--success);
+        }
+
+        .projection-card.yellow {
+            border-left-color: var(--warning);
+        }
+
+        .projection-card.red {
+            border-left-color: var(--accent);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            color: white;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+        }
+
+        .projection-card.green .card-icon {
+            background: linear-gradient(135deg, var(--success), #2ecc71);
+        }
+
+        .projection-card.yellow .card-icon {
+            background: linear-gradient(135deg, var(--warning), #e67e22);
+        }
+
+        .projection-card.red .card-icon {
+            background: linear-gradient(135deg, var(--accent), #c0392b);
+        }
+
+        .confidence-badge {
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .confidence-high {
+            background: var(--success);
+            color: white;
+        }
+
+        .confidence-medium {
+            background: var(--warning);
+            color: white;
+        }
+
+        .confidence-low {
+            background: var(--accent);
+            color: white;
+        }
+
+        .card-title {
+            font-size: 0.9em;
+            color: var(--gray);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .card-variation {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .variation-positive {
+            color: var(--success);
+        }
+
+        .variation-negative {
+            color: var(--accent);
+        }
+
+        .variation-neutral {
+            color: var(--gray);
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .chart-title {
+            font-size: 1.3em;
+            color: var(--primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+        }
+
+        .comparison-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .alert-badge {
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .alert-green {
+            background: var(--success);
+            color: white;
+        }
+
+        .alert-yellow {
+            background: var(--warning);
+            color: white;
+        }
+
+        .alert-red {
+            background: var(--accent);
+            color: white;
+        }
+
+        .recommendations {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+
+        .recommendations h3 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .recommendation-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--secondary);
+            display: flex;
+            align-items: start;
+            gap: 15px;
+        }
+
+        .recommendation-icon {
+            color: var(--secondary);
+            font-size: 1.2em;
+            margin-top: 2px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--light);
+        }
+
+        .modal-header h2 {
+            color: var(--primary);
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            color: var(--gray);
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-modal:hover {
+            color: var(--accent);
+        }
+
+        .nav-menu {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .nav-toggle {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .nav-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .nav-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 10px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            min-width: 250px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .nav-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--primary);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .nav-item:last-child {
+            border-bottom: none;
+        }
+
+        .nav-item:hover {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .nav-item i {
+            font-size: 1.2em;
+            width: 25px;
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            font-weight: 600;
+        }
+
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--dark);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            white-space: nowrap;
+            z-index: 1000;
+            margin-bottom: 5px;
+        }
+
+        .tooltip:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: var(--dark);
+            z-index: 1000;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .user-info {
+                position: static;
+                margin-top: 20px;
+                justify-content: center;
+            }
+
+            .projection-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Menú de navegación -->
+    <div class="nav-menu">
+        <div class="nav-toggle" onclick="toggleNav()">
+            <i class="fas fa-bars"></i>
+            <span>Menú</span>
+        </div>
+        <div class="nav-dropdown" id="navDropdown">
+            <a href="index.html" class="nav-item">
+                <i class="fas fa-home"></i>
+                <span>Inicio</span>
+            </a>
+            <a href="rendimiento.html" class="nav-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Rendimiento</span>
+            </a>
+            <a href="proyecciones.html" class="nav-item active">
+                <i class="fas fa-crystal-ball"></i>
+                <span>Proyecciones</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-crystal-ball"></i> Proyecciones Predictivas</h1>
+                <p>Sistema de análisis predictivo de productividad</p>
+            </div>
+            <div class="user-info">
+                <i class="fas fa-user-circle"></i>
+                <span id="userName">Usuario: Cargando...</span>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="controls">
+                <div>
+                    <button class="btn btn-refresh" onclick="actualizarProyecciones()">
+                        <i class="fas fa-sync-alt"></i> Actualizar Proyección
+                    </button>
+                    <button class="btn btn-info" onclick="mostrarInfo()">
+                        <i class="fas fa-info-circle"></i> Información
+                    </button>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="color: var(--gray);">Última actualización:</span>
+                    <span id="lastUpdate" style="font-weight: 600; color: var(--primary);">--</span>
+                </div>
+            </div>
+
+            <div class="projection-cards" id="projectionCards"></div>
+
+            <div class="chart-container">
+                <div class="chart-title">
+                    <i class="fas fa-chart-line"></i> Proyección de Productividad
+                    <span class="tooltip" data-tooltip="Este gráfico muestra cómo ha sido el rendimiento hasta ahora y cómo se proyecta que será hasta el final de la jornada">
+                        <i class="fas fa-question-circle" style="font-size: 0.8em; color: var(--gray); margin-left: 10px; cursor: help;"></i>
+                    </span>
+                </div>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9em;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 20px; height: 3px; background: #3498db;"></div>
+                            <span><strong>Rendimiento Actual:</strong> Bultos procesados hasta ahora (línea azul sólida)</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 20px; height: 3px; background: #e74c3c; border-top: 2px dashed #e74c3c;"></div>
+                            <span><strong>Proyección:</strong> Cómo se proyecta que será el rendimiento (línea roja punteada)</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 20px; height: 3px; background: #27ae60; border-top: 2px dashed #27ae60;"></div>
+                            <span><strong>Meta:</strong> Objetivo de bultos a alcanzar (línea verde punteada)</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 20px; height: 10px; background: rgba(231, 76, 60, 0.2); border: 1px solid rgba(231, 76, 60, 0.3);"></div>
+                            <span><strong>Margen de Error:</strong> Rango posible de la proyección (área sombreada)</span>
+                        </div>
+                    </div>
+                </div>
+                <canvas id="projectionChart"></canvas>
+                <div style="margin-top: 15px; padding: 10px; background: #e8f4f8; border-left: 4px solid #3498db; border-radius: 4px; font-size: 0.85em;">
+                    <strong>💡 Cómo interpretar el gráfico:</strong>
+                    <ul style="margin: 8px 0 0 20px; padding: 0;">
+                        <li>La <strong>línea azul</strong> muestra los bultos acumulados hasta el momento actual</li>
+                        <li>La <strong>línea roja punteada</strong> muestra la proyección de cómo continuará</li>
+                        <li>La <strong>línea verde</strong> es la meta que debes alcanzar</li>
+                        <li>Si la línea roja está <strong>por encima</strong> de la verde, vas bien. Si está <strong>por debajo</strong>, necesitas mejorar</li>
+                        <li>El <strong>área sombreada</strong> muestra el rango de incertidumbre de la proyección</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">
+                    <i class="fas fa-table"></i> Tabla Comparativa de Proyecciones
+                </div>
+                <table class="comparison-table" id="comparisonTable">
+                    <thead>
+                        <tr>
+                            <th>Horizonte</th>
+                            <th>Bultos Proyectados</th>
+                            <th>Tiempo Muerto (min)</th>
+                            <th>Eficiencia (%)</th>
+                            <th>Alerta</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comparisonTableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="recommendations" id="recommendations">
+                <h3><i class="fas fa-lightbulb"></i> Recomendaciones Automáticas</h3>
+                <div id="recommendationsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Detalle -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Detalle de Proyección</h2>
+                <button class="close-modal" onclick="cerrarModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURACIÓN
+        // ============================================
+        const CONFIG = {
+            HORIZONTES: [2, 4, 6, 8], // horas
+            META_BULTOS_POR_HORA: 50, // bultos/hora objetivo
+            JORNADA_HORAS: 8,
+            DIAS_HISTORICOS: 7,
+            FACTOR_CANSANCIO_BASE: 0.02,
+            UMBRAL_VERDE: 0.95, // 95% de la meta
+            UMBRAL_AMARILLO: 0.80, // 80% de la meta
+        };
+
+        // ============================================
+        // VARIABLES GLOBALES
+        // ============================================
+        let proyeccionesSistema = null;
+        let chart = null;
+
+        // ============================================
+        // INICIALIZACIÓN
+        // ============================================
+        function inicializar() {
+            inicializarAutenticacion();
+            
+            // Inicializar sistema de proyecciones
+            proyeccionesSistema = new ProyeccionesPredictivas({
+                HORIZONTES: CONFIG.HORIZONTES,
+                META_BULTOS_POR_HORA: CONFIG.META_BULTOS_POR_HORA,
+                JORNADA_HORAS: CONFIG.JORNADA_HORAS,
+                DIAS_HISTORICOS: CONFIG.DIAS_HISTORICOS,
+                FACTOR_CANSANCIO_BASE: CONFIG.FACTOR_CANSANCIO_BASE,
+                UMBRAL_VERDE: CONFIG.UMBRAL_VERDE,
+                UMBRAL_AMARILLO: CONFIG.UMBRAL_AMARILLO
+            });
+
+            proyeccionesSistema.cargarDatosHistoricos();
+            cargarDatosActuales();
+            calcularProyecciones();
+            renderizarProyecciones();
+            renderizarGrafico();
+            renderizarTabla();
+            generarRecomendaciones();
+            actualizarUltimaActualizacion();
+        }
+
+        function inicializarAutenticacion() {
+            if (!requerirAutenticacion()) {
+                return;
+            }
+            const usuario = obtenerUsuario();
+            if (usuario) {
+                const userNameEl = document.getElementById('userName');
+                if (userNameEl) {
+                    userNameEl.textContent = `Usuario: ${usuario.nombre || usuario.username}`;
+                }
+            }
+        }
+
+        // ============================================
+        // GESTIÓN DE DATOS
+        // ============================================
+        // Las funciones de gestión de datos ahora están en el módulo ProyeccionesPredictivas
+
+        function cargarDatosActuales() {
+            // INTENTAR CARGAR DATOS REALES DEL MÓDULO DE RENDIMIENTO
+            // 1. Primero intenta desde localStorage (si rendimiento.html ya procesó datos)
+            const datosGuardados = localStorage.getItem('proyecciones_datos_actuales');
+            
+            if (datosGuardados) {
+                try {
+                    const datos = JSON.parse(datosGuardados);
+                    // Verificar que los datos no sean muy antiguos (máximo 1 hora)
+                    const fechaGuardada = new Date(datos.fechaGuardado || 0);
+                    const ahora = new Date();
+                    const diffHoras = (ahora - fechaGuardada) / (1000 * 60 * 60);
+                    
+                    if (diffHoras < 1) {
+                        // Datos recientes, usar datos reales
+                        proyeccionesSistema.setDatosActuales(datos);
+                        console.log('✅ Datos cargados desde módulo de rendimiento');
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('Error al parsear datos guardados:', e);
+                }
+            }
+
+            // 2. Si no hay datos guardados, intentar desde datosProcesados global (si existe)
+            if (typeof datosProcesados !== 'undefined' && datosProcesados) {
+                const datos = calcularDatosDesdeRendimiento(datosProcesados);
+                if (datos) {
+                    proyeccionesSistema.setDatosActuales(datos);
+                    console.log('✅ Datos cargados desde datosProcesados global');
+                    return;
+                }
+            }
+
+            // 3. FALLBACK: Si no hay datos reales, usar simulación
+            console.warn('⚠️ No se encontraron datos reales, usando simulación');
+            const ahora = new Date();
+            const horaActual = ahora.getHours();
+            const minutosActuales = ahora.getMinutes();
+            const horasTrabajadas = horaActual - 8; // Asumiendo inicio a las 8 AM
+
+            const datosActuales = {
+                hora: horaActual,
+                minutos: minutosActuales,
+                horasTrabajadas: Math.max(0, horasTrabajadas + minutosActuales / 60),
+                bultosActuales: calcularBultosActuales(),
+                paradasActuales: calcularParadasActuales(),
+                tiempoMuertoActual: calcularTiempoMuertoActual(),
+                velocidadActual: calcularVelocidadActual()
+            };
+
+            proyeccionesSistema.setDatosActuales(datosActuales);
+        }
+
+        /**
+         * Calcula datos actuales desde el objeto datosProcesados del módulo de rendimiento
+         * @param {Object} datosProcesados - Objeto con usuarios, datosFiltrados, etc.
+         * @returns {Object|null} Datos actuales o null si no se pueden calcular
+         */
+        function calcularDatosDesdeRendimiento(datosProcesados) {
+            if (!datosProcesados || !datosProcesados.usuarios || !datosProcesados.datosFiltrados) {
+                return null;
+            }
+
+            const ahora = new Date();
+            const usuarios = datosProcesados.usuarios;
+            const datosFiltrados = datosProcesados.datosFiltrados;
+
+            // Calcular totales
+            let totalBultos = 0;
+            let totalParadas = 0;
+            let totalTiempoMuerto = 0;
+            let primeraFecha = null;
+            let ultimaFecha = null;
+
+            Object.values(usuarios).forEach(usuario => {
+                totalBultos += usuario.totalBultos || 0;
+                totalParadas += usuario.totalParadas || 0;
+                totalTiempoMuerto += usuario.tiempoMuerto5min?.total || 0;
+
+                if (!primeraFecha || usuario.primeraTransaccion < primeraFecha) {
+                    primeraFecha = usuario.primeraTransaccion;
+                }
+                if (!ultimaFecha || usuario.ultimaTransaccion > ultimaFecha) {
+                    ultimaFecha = usuario.ultimaTransaccion;
+                }
+            });
+
+            // Calcular horas trabajadas
+            const horasTrabajadas = primeraFecha && ultimaFecha 
+                ? (ultimaFecha - primeraFecha) / (1000 * 60 * 60) 
+                : (ahora.getHours() - 8);
+
+            // Calcular velocidad actual
+            const velocidadActual = horasTrabajadas > 0 
+                ? totalBultos / horasTrabajadas 
+                : 0;
+
+            return {
+                hora: ahora.getHours(),
+                minutos: ahora.getMinutes(),
+                horasTrabajadas: Math.max(0, horasTrabajadas),
+                bultosActuales: totalBultos,
+                paradasActuales: totalParadas,
+                tiempoMuertoActual: totalTiempoMuerto,
+                velocidadActual: velocidadActual,
+                transacciones: datosFiltrados,
+                primeraFecha: primeraFecha,
+                ultimaFecha: ultimaFecha
+            };
+        }
+
+        function calcularBultosActuales() {
+            // Simulación: basado en hora del día y datos históricos
+            const hora = new Date().getHours();
+            const factorHora = proyeccionesSistema.obtenerFactorHorarioPatron(hora);
+            const baseBultos = 200; // Base para el día
+            return Math.round(baseBultos * factorHora * (1 + Math.random() * 0.2 - 0.1));
+        }
+
+        function calcularParadasActuales() {
+            const datos = proyeccionesSistema.datosActuales;
+            return Math.round(datos.bultosActuales * 0.8);
+        }
+
+        function calcularTiempoMuertoActual() {
+            // Simulación: tiempo muerto promedio
+            const datos = proyeccionesSistema.datosActuales;
+            return Math.round(datos.horasTrabajadas * 15); // 15 min por hora promedio
+        }
+
+        function calcularVelocidadActual() {
+            const datos = proyeccionesSistema.datosActuales;
+            if (datos.horasTrabajadas <= 0) return CONFIG.META_BULTOS_POR_HORA;
+            return datos.bultosActuales / datos.horasTrabajadas;
+        }
+
+        // ============================================
+        // CÁLCULO DE PROYECCIONES
+        // ============================================
+        function calcularProyecciones() {
+            proyeccionesSistema.calcularProyecciones();
+        }
+
+        // ============================================
+        // RENDERIZADO
+        // ============================================
+        function renderizarProyecciones() {
+            const container = document.getElementById('projectionCards');
+            container.innerHTML = '';
+
+            CONFIG.HORIZONTES.forEach(horizonte => {
+                const proyeccion = proyeccionesSistema.proyecciones[horizonte];
+                if (!proyeccion) return;
+
+                const card = crearTarjetaProyeccion(proyeccion);
+                container.appendChild(card);
+            });
+        }
+
+        function crearTarjetaProyeccion(proyeccion) {
+            const eficiencia = proyeccion.eficiencia;
+            const porcentajeMeta = eficiencia / 100;
+
+            // Determinar color de la tarjeta
+            let colorClass = 'green';
+            if (porcentajeMeta < CONFIG.UMBRAL_AMARILLO) {
+                colorClass = 'red';
+            } else if (porcentajeMeta < CONFIG.UMBRAL_VERDE) {
+                colorClass = 'yellow';
+            }
+
+            // Determinar nivel de confianza
+            let confianzaClass = 'confidence-low';
+            let confianzaText = 'Bajo';
+            if (proyeccion.confianza >= 0.8) {
+                confianzaClass = 'confidence-high';
+                confianzaText = 'Alto';
+            } else if (proyeccion.confianza >= 0.65) {
+                confianzaClass = 'confidence-medium';
+                confianzaText = 'Medio';
+            }
+
+            // Variación vs meta
+            const variacion = ((eficiencia / 100) - 1) * 100;
+            let variacionClass = 'variation-neutral';
+            let variacionIcon = '';
+            if (variacion > 0) {
+                variacionClass = 'variation-positive';
+                variacionIcon = '<i class="fas fa-arrow-up"></i>';
+            } else if (variacion < 0) {
+                variacionClass = 'variation-negative';
+                variacionIcon = '<i class="fas fa-arrow-down"></i>';
+            }
+
+            const card = document.createElement('div');
+            card.className = `projection-card ${colorClass}`;
+            card.onclick = () => mostrarDetalle(proyeccion);
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <span class="confidence-badge ${confianzaClass}">${confianzaText}</span>
+                </div>
+                <div class="card-title">Proyección a ${proyeccion.horizonte} horas</div>
+                <div class="card-value">${proyeccion.bultosTotales}</div>
+                <div class="card-variation ${variacionClass}">
+                    ${variacionIcon} ${variacion > 0 ? '+' : ''}${variacion.toFixed(1)}% vs Meta
+                </div>
+                <div style="margin-top: 15px; font-size: 0.85em; color: var(--gray);">
+                    <div>Bultos proyectados: <strong>${proyeccion.bultosProyectados}</strong></div>
+                    <div>Eficiencia: <strong>${eficiencia.toFixed(1)}%</strong></div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function renderizarGrafico() {
+            const ctx = document.getElementById('projectionChart');
+            if (chart) {
+                chart.destroy();
+            }
+
+            // Preparar datos
+            const horas = [];
+            const bultosActuales = [];
+            const bultosProyectados = [];
+            const bultosMeta = [];
+            const margenErrorSuperior = [];
+            const margenErrorInferior = [];
+
+            const horaInicio = 8; // Asumiendo inicio a las 8 AM
+            const datos = proyeccionesSistema.datosActuales;
+            const horaActual = datos.hora;
+            const horasTrabajadas = datos.horasTrabajadas;
+
+            // Datos históricos (actuales) - mostrar progreso real
+            for (let h = horaInicio; h <= horaActual; h++) {
+                horas.push(`${h}:00`);
+                
+                // Calcular bultos acumulados hasta esta hora
+                // Si es la hora actual, usar bultos reales; si es anterior, estimar proporcionalmente
+                let bultosAcumulados;
+                if (h === horaActual) {
+                    bultosAcumulados = datos.bultosActuales;
+                } else if (horasTrabajadas > 0) {
+                    // Estimar proporcionalmente basado en horas trabajadas
+                    bultosAcumulados = datos.bultosActuales * ((h - horaInicio) / horasTrabajadas);
+                } else {
+                    bultosAcumulados = CONFIG.META_BULTOS_POR_HORA * (h - horaInicio);
+                }
+                
+                bultosActuales.push(Math.round(bultosAcumulados));
+                bultosProyectados.push(null); // No hay proyección para horas pasadas
+                bultosMeta.push(CONFIG.META_BULTOS_POR_HORA * (h - horaInicio));
+                margenErrorSuperior.push(null);
+                margenErrorInferior.push(null);
+            }
+
+            // Proyecciones futuras
+            const proyeccion8h = proyeccionesSistema.proyecciones[8];
+            if (proyeccion8h) {
+                const horasRestantes = CONFIG.JORNADA_HORAS - horasTrabajadas;
+                const velocidadProyectada = proyeccion8h.velocidadProyectada;
+                
+                for (let h = horaActual + 1; h <= horaInicio + CONFIG.JORNADA_HORAS; h++) {
+                    horas.push(`${h}:00`);
+                    bultosActuales.push(null); // No hay datos reales para horas futuras
+                    
+                    // Calcular proyección: bultos actuales + proyección para horas restantes
+                    const horasDesdeActual = h - horaActual;
+                    const bultosProyectadosEnHora = datos.bultosActuales + (velocidadProyectada * horasDesdeActual);
+                    
+                    bultosProyectados.push(Math.round(bultosProyectadosEnHora));
+                    bultosMeta.push(CONFIG.META_BULTOS_POR_HORA * (h - horaInicio));
+                    
+                    // Margen de error basado en confianza de la proyección
+                    const margenError = proyeccion8h.margenError || 0.1;
+                    const error = bultosProyectadosEnHora * margenError;
+                    margenErrorSuperior.push(Math.round(bultosProyectadosEnHora + error));
+                    margenErrorInferior.push(Math.round(Math.max(0, bultosProyectadosEnHora - error)));
+                }
+            }
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: horas,
+                    datasets: [
+                        {
+                            label: 'Rendimiento Actual',
+                            data: bultosActuales,
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.4,
+                            fill: false
+                        },
+                        {
+                            label: 'Proyección',
+                            data: bultosProyectados,
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            tension: 0.4,
+                            fill: false
+                        },
+                        {
+                            label: 'Meta',
+                            data: bultosMeta,
+                            borderColor: '#27ae60',
+                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [2, 2],
+                            tension: 0,
+                            fill: false
+                        },
+                        {
+                            label: 'Margen de Error Superior',
+                            data: margenErrorSuperior,
+                            borderColor: 'rgba(231, 76, 60, 0.3)',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            borderWidth: 1,
+                            borderDash: [2, 2],
+                            fill: '+1',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Margen de Error Inferior',
+                            data: margenErrorInferior,
+                            borderColor: 'rgba(231, 76, 60, 0.3)',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            borderWidth: 1,
+                            borderDash: [2, 2],
+                            fill: false,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y.toLocaleString('es-ES') + ' bultos';
+                                        
+                                        // Agregar información adicional según el dataset
+                                        if (context.datasetIndex === 0) {
+                                            label += ' (real)';
+                                        } else if (context.datasetIndex === 1) {
+                                            label += ' (proyectado)';
+                                        } else if (context.datasetIndex === 2) {
+                                            label += ' (objetivo)';
+                                        }
+                                    }
+                                    return label;
+                                },
+                                afterLabel: function(context) {
+                                    if (context.datasetIndex === 1 && context.parsed.y !== null) {
+                                        const meta = context.dataset.data[context.dataIndex];
+                                        const diferencia = context.parsed.y - meta;
+                                        const porcentaje = ((context.parsed.y / meta) * 100).toFixed(1);
+                                        
+                                        if (diferencia > 0) {
+                                            return `✅ ${porcentaje}% de la meta (+${Math.round(diferencia)} bultos)`;
+                                        } else if (diferencia < 0) {
+                                            return `⚠️ ${porcentaje}% de la meta (${Math.round(diferencia)} bultos faltantes)`;
+                                        } else {
+                                            return `✓ ${porcentaje}% de la meta (justo en el objetivo)`;
+                                        }
+                                    }
+                                    return '';
+                                }
+                            }
+                        },
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    xMin: horaActual,
+                                    xMax: horaActual,
+                                    borderColor: 'rgba(0, 0, 0, 0.5)',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5],
+                                    label: {
+                                        content: 'AHORA',
+                                        enabled: true,
+                                        position: 'top'
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Bultos Acumulados',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString('es-ES');
+                                }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Hora del Día',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+        }
+
+        function renderizarTabla() {
+            const tbody = document.getElementById('comparisonTableBody');
+            tbody.innerHTML = '';
+
+            CONFIG.HORIZONTES.forEach(horizonte => {
+                const proyeccion = proyeccionesSistema.proyecciones[horizonte];
+                if (!proyeccion) return;
+
+                const eficiencia = proyeccion.eficiencia;
+                const porcentajeMeta = eficiencia / 100;
+
+                let alertClass = 'alert-green';
+                let alertText = 'Óptimo';
+                if (porcentajeMeta < CONFIG.UMBRAL_AMARILLO) {
+                    alertClass = 'alert-red';
+                    alertText = 'Crítico';
+                } else if (porcentajeMeta < CONFIG.UMBRAL_VERDE) {
+                    alertClass = 'alert-yellow';
+                    alertText = 'Atención';
+                }
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${horizonte} horas</strong></td>
+                    <td>${proyeccion.bultosTotales}</td>
+                    <td>${Math.round(proyeccion.tiempoMuertoProyectado)}</td>
+                    <td>${eficiencia.toFixed(1)}%</td>
+                    <td><span class="alert-badge ${alertClass}">${alertText}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function generarRecomendaciones() {
+            const container = document.getElementById('recommendationsList');
+            container.innerHTML = '';
+
+            const recomendaciones = proyeccionesSistema.generarRecomendaciones();
+
+            // Recomendaciones adicionales basadas en tiempo muerto
+            const datos = proyeccionesSistema.datosActuales;
+            if (datos.tiempoMuertoActual > 60) {
+                recomendaciones.push({
+                    tipo: 'tiempo-muerto',
+                    icono: 'pause-circle',
+                    mensaje: `Tiempo muerto elevado: ${Math.round(datos.tiempoMuertoActual)} minutos acumulados.`,
+                    accion: 'Revisar causas de tiempo muerto y optimizar flujo de trabajo.',
+                    prioridad: 2
+                });
+            }
+
+
+            if (recomendaciones.length === 0) {
+                container.innerHTML = `
+                    <div class="recommendation-item">
+                        <i class="fas fa-check-circle recommendation-icon" style="color: var(--success);"></i>
+                        <div>
+                            <strong>Todo en orden</strong>
+                            <p style="color: var(--gray); margin-top: 5px;">Las proyecciones indican que se alcanzará la meta sin problemas.</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                recomendaciones.slice(0, 5).forEach(rec => {
+                    const item = document.createElement('div');
+                    item.className = 'recommendation-item';
+                    item.innerHTML = `
+                        <i class="fas fa-${rec.icono} recommendation-icon"></i>
+                        <div>
+                            <strong>${rec.mensaje}</strong>
+                            <p style="color: var(--gray); margin-top: 5px;">${rec.accion}</p>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            }
+        }
+
+        // ============================================
+        // MODAL DE DETALLE
+        // ============================================
+        function mostrarDetalle(proyeccion) {
+            const modal = document.getElementById('detailModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+
+            modalTitle.textContent = `Detalle de Proyección a ${proyeccion.horizonte} horas`;
+
+            modalBody.innerHTML = `
+                <div style="display: grid; gap: 20px;">
+                    <div>
+                        <h3 style="color: var(--primary); margin-bottom: 10px;">Métricas Principales</h3>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px;">
+                                <div style="color: var(--gray); font-size: 0.85em; margin-bottom: 5px;">Bultos Totales Proyectados</div>
+                                <div style="font-size: 1.8em; font-weight: bold; color: var(--primary);">${proyeccion.bultosTotales}</div>
+                            </div>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px;">
+                                <div style="color: var(--gray); font-size: 0.85em; margin-bottom: 5px;">Bultos Adicionales</div>
+                                <div style="font-size: 1.8em; font-weight: bold; color: var(--secondary);">${proyeccion.bultosProyectados}</div>
+                            </div>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px;">
+                                <div style="color: var(--gray); font-size: 0.85em; margin-bottom: 5px;">Eficiencia</div>
+                                <div style="font-size: 1.8em; font-weight: bold; color: ${proyeccion.eficiencia >= 95 ? 'var(--success)' : proyeccion.eficiencia >= 80 ? 'var(--warning)' : 'var(--accent)'};">${proyeccion.eficiencia.toFixed(1)}%</div>
+                            </div>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px;">
+                                <div style="color: var(--gray); font-size: 0.85em; margin-bottom: 5px;">Tiempo Muerto Proyectado</div>
+                                <div style="font-size: 1.8em; font-weight: bold; color: var(--accent);">${Math.round(proyeccion.tiempoMuertoProyectado)} min</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 style="color: var(--primary); margin-bottom: 10px;">Análisis Detallado</h3>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 10px;">
+                            <div style="margin-bottom: 10px;">
+                                <strong>Velocidad Proyectada:</strong> ${proyeccion.velocidadProyectada.toFixed(1)} bultos/hora
+                            </div>
+                            <div style="margin-bottom: 10px;">
+                                <strong>Factor Horario:</strong> ${(proyeccion.factorHorario * 100).toFixed(1)}%
+                            </div>
+                            <div style="margin-bottom: 10px;">
+                                <strong>Factor Cansancio:</strong> ${(proyeccion.factorCansancio * 100).toFixed(1)}%
+                            </div>
+                            <div style="margin-bottom: 10px;">
+                                <strong>Nivel de Confianza:</strong> ${(proyeccion.confianza * 100).toFixed(0)}%
+                            </div>
+                            ${proyeccion.brecha > 0 ? `
+                                <div style="margin-bottom: 10px; color: var(--accent);">
+                                    <strong>Brecha de Productividad:</strong> ${Math.round(proyeccion.brecha)} bultos faltantes
+                                </div>
+                            ` : ''}
+                            ${proyeccion.puntoInflexion ? `
+                                <div style="margin-bottom: 10px; color: var(--warning);">
+                                    <strong>Punto de Inflexión:</strong> Intervención necesaria a las ${Math.round(proyeccion.puntoInflexion)}:00
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.add('active');
+        }
+
+        function cerrarModal() {
+            const modal = document.getElementById('detailModal');
+            modal.classList.remove('active');
+        }
+
+        // ============================================
+        // FUNCIONES DE UTILIDAD
+        // ============================================
+        function actualizarProyecciones() {
+            cargarDatosActuales();
+            calcularProyecciones();
+            renderizarProyecciones();
+            renderizarGrafico();
+            renderizarTabla();
+            generarRecomendaciones();
+            actualizarUltimaActualizacion();
+        }
+
+        function actualizarUltimaActualizacion() {
+            const ahora = new Date();
+            const fechaStr = ahora.toLocaleString('es-ES');
+            document.getElementById('lastUpdate').textContent = fechaStr;
+        }
+
+        function mostrarInfo() {
+            const info = `
+📊 SISTEMA DE PROYECCIONES PREDICTIVAS
+
+Este sistema calcula proyecciones basadas en:
+• Datos históricos de los últimos 7 días
+• Rendimiento actual del día
+• Patrones horarios de productividad
+• Factores de cansancio
+
+📈 CÓMO LEER EL GRÁFICO:
+
+🔵 Línea Azul (Rendimiento Actual):
+   Muestra los bultos que realmente has procesado hasta ahora
+
+🔴 Línea Roja Punteada (Proyección):
+   Predicción de cómo continuará tu rendimiento
+   • Por encima de la verde = ✅ Superarás la meta
+   • Por debajo de la verde = ⚠️ No alcanzarás la meta
+
+🟢 Línea Verde (Meta):
+   Tu objetivo: 50 bultos por hora
+
+🔴 Área Sombreada (Margen de Error):
+   Rango de incertidumbre de la proyección
+
+💡 TIP: Si la línea roja está por debajo de la verde,
+   necesitas acelerar para alcanzar la meta.
+
+Las proyecciones se actualizan automáticamente cada vez que se recalculan.
+            `;
+            alert(info);
+        }
+
+
+        function toggleNav() {
+            const dropdown = document.getElementById('navDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        // Cerrar menú al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            const navMenu = document.querySelector('.nav-menu');
+            const dropdown = document.getElementById('navDropdown');
+            if (!navMenu.contains(e.target) && dropdown.classList.contains('active')) {
+                dropdown.classList.remove('active');
+            }
+        });
+
+        // Cerrar modal al hacer clic fuera
+        document.getElementById('detailModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                cerrarModal();
+            }
+        });
+
+        // Inicializar al cargar
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', inicializar);
+        } else {
+            inicializar();
+        }
+    </script>
+</body>
+</html>
+

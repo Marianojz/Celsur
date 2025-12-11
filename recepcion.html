@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Módulo de Ventilación - Sistema Integral de Jefatura</title>
+    <title>Módulo de Recepción - Sistema Integral de Jefatura</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="auth.js"></script>
     <style>
         :root {
             --primary: #2c3e50;
@@ -419,7 +420,7 @@
                 <i class="fas fa-arrow-left"></i> Volver al Inicio
             </button>
             <div class="header-content">
-                <h1><i class="fas fa-wind"></i> Módulo de Ventilación</h1>
+                <h1><i class="fas fa-inbox"></i> Módulo de Recepción</h1>
                 <p>Gestión y Control Operacional</p>
             </div>
         </div>
@@ -466,31 +467,10 @@
                     <i class="fas fa-arrow-right"></i> Acceder a Presentismo
                 </button>
             </div>
-
-            <!-- Submódulo 3: Utilidades -->
-            <div class="module-card" data-module="utilidades">
-                <div class="module-icon">
-                    <i class="fas fa-file-excel"></i>
-                </div>
-                <div class="module-title">Utilidades</div>
-                <div class="module-description">
-                    Herramientas útiles para el procesamiento y filtrado de datos. 
-                    Filtrado de archivos Excel y otras utilidades.
-                </div>
-                <ul class="module-features">
-                    <li><i class="fas fa-check-circle"></i> Filtrado de archivos Excel</li>
-                    <li><i class="fas fa-check-circle"></i> Procesamiento de datos</li>
-                    <li><i class="fas fa-check-circle"></i> Exportación filtrada</li>
-                    <li><i class="fas fa-check-circle"></i> Visualización de resultados</li>
-                </ul>
-                <button class="module-button" onclick="abrirSubmodulo('utilidades')">
-                    <i class="fas fa-arrow-right"></i> Acceder a Utilidades
-                </button>
-            </div>
         </div>
 
         <div class="footer">
-            <p><i class="fas fa-code"></i> Módulo de Ventilación | Sistema Integral de Jefatura | Celsur</p>
+            <p><i class="fas fa-code"></i> Módulo de Recepción | Sistema Integral de Jefatura | Celsur</p>
         </div>
     </div>
 
@@ -505,21 +485,25 @@
                 <i class="fas fa-home"></i>
                 <span>Inicio</span>
             </a>
-            <a href="ventilacion.html" class="nav-item active">
-                <i class="fas fa-wind"></i>
-                <span>Ventilación</span>
+            <a href="recepcion.html" class="nav-item active">
+                <i class="fas fa-inbox"></i>
+                <span>Recepción</span>
             </a>
-            <a href="rendimiento.html" class="nav-item">
+            <a href="rendimiento-recepcion.html" class="nav-item">
                 <i class="fas fa-chart-line"></i>
                 <span>Rendimiento</span>
+            </a>
+            <a href="presentismo-recepcion.html" class="nav-item">
+                <i class="fas fa-user-check"></i>
+                <span>Presentismo</span>
             </a>
             <a href="proyecciones.html" class="nav-item">
                 <i class="fas fa-crystal-ball"></i>
                 <span>Proyecciones</span>
             </a>
-            <a href="presentismo.html" class="nav-item">
-                <i class="fas fa-user-check"></i>
-                <span>Presentismo</span>
+            <a href="#" class="nav-item" onclick="cerrarSesion(); return false;" style="color: var(--accent);">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Salir</span>
             </a>
         </div>
     </div>
@@ -531,25 +515,35 @@
 
     <script>
         // ============================================
+        // VERIFICACIÓN DE AUTENTICACIÓN
+        // ============================================
+        function inicializarAutenticacion() {
+            if (!requerirAutenticacion()) {
+                return;
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', inicializarAutenticacion);
+        } else {
+            inicializarAutenticacion();
+        }
+
+        // ============================================
         // CONFIGURACIÓN
         // ============================================
         const CONFIG = {
             SUBMODULOS: {
-            rendimiento: {
-                nombre: 'Rendimiento',
-                archivo: 'rendimiento.html',
-                disponible: true
-            },
-            presentismo: {
-                nombre: 'Presentismo',
-                archivo: 'presentismo.html',
-                disponible: true
-            },
-            utilidades: {
-                nombre: 'Utilidades',
-                archivo: 'utilidades.html',
-                disponible: true
-            }
+                rendimiento: {
+                    nombre: 'Rendimiento',
+                    archivo: 'rendimiento-recepcion.html',
+                    disponible: true
+                },
+                presentismo: {
+                    nombre: 'Presentismo',
+                    archivo: 'presentismo-recepcion.html',
+                    disponible: true
+                }
             }
         };
 

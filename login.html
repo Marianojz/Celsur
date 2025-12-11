@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - Sistema Integral de Jefatura</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --gray: #95a5a6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            overflow: hidden;
+            width: 100%;
+            max-width: 450px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        .login-header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .login-header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 300;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .login-header p {
+            font-size: 1em;
+            opacity: 0.95;
+        }
+
+        .login-body {
+            padding: 40px 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 14px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--light);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .input-icon {
+            position: relative;
+        }
+
+        .input-icon i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray);
+        }
+
+        .input-icon .form-input {
+            padding-left: 45px;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .demo-credentials {
+            background: var(--light);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 4px solid var(--secondary);
+        }
+
+        .demo-credentials h4 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .demo-item {
+            margin-bottom: 12px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .demo-item strong {
+            color: var(--primary);
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .demo-item span {
+            color: var(--gray);
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--secondary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .login-container {
+                max-width: 100%;
+            }
+
+            .login-body {
+                padding: 30px 20px;
+            }
+
+            .login-header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <div class="login-header-content">
+                <h1><i class="fas fa-shield-alt"></i> Iniciar Sesión</h1>
+                <p>Sistema Integral de Jefatura - Celsur</p>
+            </div>
+        </div>
+
+        <div class="login-body">
+            <div id="alert-container"></div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username" class="form-label">
+                        <i class="fas fa-user"></i> Usuario
+                    </label>
+                    <div class="input-icon">
+                        <i class="fas fa-user"></i>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            class="form-input" 
+                            placeholder="Ingresa tu usuario"
+                            required
+                            autocomplete="username"
+                        >
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password" class="form-label">
+                        <i class="fas fa-lock"></i> Contraseña
+                    </label>
+                    <div class="input-icon">
+                        <i class="fas fa-lock"></i>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            class="form-input" 
+                            placeholder="Ingresa tu contraseña"
+                            required
+                            autocomplete="current-password"
+                        >
+                    </div>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                </div>
+
+                <button type="submit" class="btn-login" id="btn-login">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                </button>
+            </form>
+
+            <div class="demo-credentials">
+                <h4><i class="fas fa-info-circle"></i> Credenciales de Prueba</h4>
+                <div class="demo-item">
+                    <strong>Administrador:</strong>
+                    <span>Usuario: admin | Contraseña: admin123</span>
+                </div>
+                <div class="demo-item">
+                    <strong>Usuario Común:</strong>
+                    <span>Usuario: usuario | Contraseña: usuario123</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // SISTEMA DE AUTENTICACIÓN
+        // ============================================
+
+        // Base de datos de usuarios (en producción esto debería estar en un servidor)
+        const USUARIOS = {
+            'admin': {
+                password: 'admin123',
+                role: 'admin',
+                nombre: 'Administrador',
+                email: 'admin@celsur.com'
+            },
+            'usuario': {
+                password: 'usuario123',
+                role: 'usuario',
+                nombre: 'Usuario Común',
+                email: 'usuario@celsur.com'
+            }
+        };
+
+        // Verificar si ya está autenticado
+        function verificarAutenticacion() {
+            const userSession = localStorage.getItem('userSession');
+            if (userSession) {
+                try {
+                    const session = JSON.parse(userSession);
+                    // Verificar si la sesión no ha expirado (24 horas)
+                    const ahora = new Date().getTime();
+                    if (session.expiresAt && ahora < session.expiresAt) {
+                        // Redirigir al index
+                        window.location.href = 'index.html';
+                        return true;
+                    } else {
+                        // Sesión expirada
+                        localStorage.removeItem('userSession');
+                    }
+                } catch (e) {
+                    localStorage.removeItem('userSession');
+                }
+            }
+            return false;
+        }
+
+        // Iniciar sesión
+        function iniciarSesion(username, password) {
+            const usuario = USUARIOS[username.toLowerCase()];
+            
+            if (!usuario) {
+                mostrarAlerta('Usuario no encontrado', 'error');
+                return false;
+            }
+
+            if (usuario.password !== password) {
+                mostrarAlerta('Contraseña incorrecta', 'error');
+                return false;
+            }
+
+            // Crear sesión
+            const ahora = new Date().getTime();
+            const expiresAt = ahora + (24 * 60 * 60 * 1000); // 24 horas
+
+            const session = {
+                username: username.toLowerCase(),
+                role: usuario.role,
+                nombre: usuario.nombre,
+                email: usuario.email,
+                loginTime: ahora,
+                expiresAt: expiresAt
+            };
+
+            // Guardar en localStorage
+            localStorage.setItem('userSession', JSON.stringify(session));
+            localStorage.setItem('userRole', usuario.role);
+
+            mostrarAlerta('Inicio de sesión exitoso. Redirigiendo...', 'success');
+            
+            // Redirigir después de 1 segundo
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1000);
+
+            return true;
+        }
+
+        // Mostrar alerta
+        function mostrarAlerta(mensaje, tipo) {
+            const alertContainer = document.getElementById('alert-container');
+            const alertClass = tipo === 'error' ? 'alert-error' : 'alert-success';
+            
+            alertContainer.innerHTML = `
+                <div class="alert ${alertClass}" style="display: block;">
+                    <i class="fas fa-${tipo === 'error' ? 'exclamation-circle' : 'check-circle'}"></i>
+                    ${mensaje}
+                </div>
+            `;
+
+            // Auto-ocultar después de 5 segundos
+            setTimeout(() => {
+                const alert = alertContainer.querySelector('.alert');
+                if (alert) {
+                    alert.style.display = 'none';
+                }
+            }, 5000);
+        }
+
+        // Manejar envío del formulario
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const loading = document.getElementById('loading');
+            const btnLogin = document.getElementById('btn-login');
+
+            if (!username || !password) {
+                mostrarAlerta('Por favor, completa todos los campos', 'error');
+                return;
+            }
+
+            // Mostrar loading
+            loading.style.display = 'block';
+            btnLogin.disabled = true;
+            btnLogin.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iniciando sesión...';
+
+            // Simular delay de red (opcional)
+            setTimeout(() => {
+                iniciarSesion(username, password);
+                loading.style.display = 'none';
+                btnLogin.disabled = false;
+                btnLogin.innerHTML = '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';
+            }, 500);
+        });
+
+        // Verificar si ya está autenticado al cargar
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', verificarAutenticacion);
+        } else {
+            verificarAutenticacion();
+        }
+
+        // Permitir login con Enter
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('login-form').dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+</body>
+</html>
+

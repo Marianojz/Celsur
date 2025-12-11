@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema Integral de Jefatura - Celsur</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="auth.js"></script>
     <style>
         :root {
             --primary: #2c3e50;
@@ -488,9 +489,17 @@
                 <i class="fas fa-chart-line"></i>
                 <span>Rendimiento</span>
             </a>
+            <a href="proyecciones.html" class="nav-item">
+                <i class="fas fa-crystal-ball"></i>
+                <span>Proyecciones</span>
+            </a>
             <a href="presentismo.html" class="nav-item">
                 <i class="fas fa-user-check"></i>
                 <span>Presentismo</span>
+            </a>
+            <a href="#" class="nav-item" onclick="cerrarSesion(); return false;" style="color: var(--accent);">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Salir</span>
             </a>
         </div>
     </div>
@@ -503,7 +512,10 @@
             </div>
             <div class="user-info">
                 <i class="fas fa-user-circle"></i>
-                <span id="userName">Usuario: Administrador</span>
+                <span id="userName">Usuario: Cargando...</span>
+                <button id="btn-logout" onclick="cerrarSesion()" style="margin-left: 15px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 0.9em; transition: all 0.3s;">
+                    <i class="fas fa-sign-out-alt"></i> Salir
+                </button>
             </div>
         </div>
 
@@ -524,18 +536,18 @@
 
         <div class="modules-container">
             <!-- Módulo 1: Recepción -->
-            <div class="module-card pending" data-module="recepcion">
+            <div class="module-card" data-module="recepcion">
                 <div class="module-icon">
                     <i class="fas fa-inbox"></i>
                 </div>
                 <div class="module-title">Recepción</div>
-                <div class="module-status pending">En Desarrollo</div>
+                <div class="module-status active">Activo</div>
                 <div class="module-description">
                     Sistema de gestión y control de recepción de mercadería. 
-                    Registro de ingresos, validación de documentos y seguimiento de procesos.
+                    Incluye módulos de Rendimiento y Presentismo para control completo.
                 </div>
-                <button class="module-button" disabled>
-                    <i class="fas fa-lock"></i> Próximamente
+                <button class="module-button" onclick="abrirModulo('recepcion')">
+                    <i class="fas fa-arrow-right"></i> Acceder al Módulo
                 </button>
             </div>
 
@@ -556,18 +568,18 @@
             </div>
 
             <!-- Módulo 3: Despacho -->
-            <div class="module-card pending" data-module="despacho">
+            <div class="module-card" data-module="despacho">
                 <div class="module-icon">
                     <i class="fas fa-shipping-fast"></i>
                 </div>
                 <div class="module-title">Despacho</div>
-                <div class="module-status pending">En Desarrollo</div>
+                <div class="module-status active">Activo</div>
                 <div class="module-description">
                     Gestión y control de procesos de despacho. 
-                    Seguimiento de órdenes, planificación de rutas y control de entregas.
+                    Incluye módulos de Rendimiento y Presentismo para control completo.
                 </div>
-                <button class="module-button" disabled>
-                    <i class="fas fa-lock"></i> Próximamente
+                <button class="module-button" onclick="abrirModulo('despacho')">
+                    <i class="fas fa-arrow-right"></i> Acceder al Módulo
                 </button>
             </div>
         </div>
@@ -591,8 +603,8 @@
             MODULOS: {
                 recepcion: {
                     nombre: 'Recepción',
-                    archivo: null,
-                    disponible: false
+                    archivo: 'recepcion.html',
+                    disponible: true
                 },
                 ventilacion: {
                     nombre: 'Ventilación',
@@ -601,11 +613,37 @@
                 },
                 despacho: {
                     nombre: 'Despacho',
-                    archivo: null,
-                    disponible: false
+                    archivo: 'despacho.html',
+                    disponible: true
                 }
             }
         };
+
+        // ============================================
+        // VERIFICACIÓN DE AUTENTICACIÓN
+        // ============================================
+        function inicializarAutenticacion() {
+            // Verificar si el usuario está autenticado
+            if (!requerirAutenticacion()) {
+                return;
+            }
+
+            // Actualizar información del usuario
+            const usuario = obtenerUsuario();
+            if (usuario) {
+                const userNameEl = document.getElementById('userName');
+                if (userNameEl) {
+                    userNameEl.textContent = `Usuario: ${usuario.nombre || usuario.username} (${usuario.role})`;
+                }
+            }
+        }
+
+        // Inicializar autenticación al cargar
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', inicializarAutenticacion);
+        } else {
+            inicializarAutenticacion();
+        }
 
         // ============================================
         // FUNCIONES DE UTILIDAD
